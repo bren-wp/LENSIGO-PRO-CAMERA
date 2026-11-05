@@ -175,14 +175,23 @@ object FilterEngine {
             val out = current.copyOf()
             for (x in 1 until width - 1) {
                 val center = current[x]
-                val neighbors = intArrayOf(previous[x], current[x - 1], current[x + 1], next[x])
+                val up = previous[x]
+                val left = current[x - 1]
+                val right = current[x + 1]
+                val down = next[x]
+                val sumR = android.graphics.Color.red(up) + android.graphics.Color.red(left) +
+                    android.graphics.Color.red(right) + android.graphics.Color.red(down)
+                val sumG = android.graphics.Color.green(up) + android.graphics.Color.green(left) +
+                    android.graphics.Color.green(right) + android.graphics.Color.green(down)
+                val sumB = android.graphics.Color.blue(up) + android.graphics.Color.blue(left) +
+                    android.graphics.Color.blue(right) + android.graphics.Color.blue(down)
                 var r = android.graphics.Color.red(center)
                 var g = android.graphics.Color.green(center)
                 var b = android.graphics.Color.blue(center)
                 if (look.softenNoise) {
-                    val avgR = neighbors.sumOf { android.graphics.Color.red(it) } / 4
-                    val avgG = neighbors.sumOf { android.graphics.Color.green(it) } / 4
-                    val avgB = neighbors.sumOf { android.graphics.Color.blue(it) } / 4
+                    val avgR = sumR / 4
+                    val avgG = sumG / 4
+                    val avgB = sumB / 4
                     if (maxOf(kotlin.math.abs(r - avgR), kotlin.math.abs(g - avgG),
                         kotlin.math.abs(b - avgB)) < 22) {
                         r = (r * 3 + avgR) / 4
@@ -191,10 +200,10 @@ object FilterEngine {
                     }
                 }
                 if (look.sharpen) {
-                    // Mild unsharp mask: 1.4 * center - 0.4 * neighbor mean.
-                    r = ((r * 14 - neighbors.sumOf { android.graphics.Color.red(it) }) / 10).coerceIn(0,255)
-                    g = ((g * 14 - neighbors.sumOf { android.graphics.Color.green(it) }) / 10).coerceIn(0,255)
-                    b = ((b * 14 - neighbors.sumOf { android.graphics.Color.blue(it) }) / 10).coerceIn(0,255)
+                    // Mild unsharp mask; no per-pixel allocations on low-RAM devices.
+                    r = ((r * 14 - sumR) / 10).coerceIn(0,255)
+                    g = ((g * 14 - sumG) / 10).coerceIn(0,255)
+                    b = ((b * 14 - sumB) / 10).coerceIn(0,255)
                 }
                 out[x] = android.graphics.Color.rgb(r.coerceIn(0,255),
                     g.coerceIn(0,255), b.coerceIn(0,255))
