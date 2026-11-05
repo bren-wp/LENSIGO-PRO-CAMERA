@@ -24,7 +24,7 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.6.0'
-      - name: Build debug APK and unsigned AAB
+      - name: Build APK and AAB
         run: gradle :app:assembleDebug :app:bundleRelease --stacktrace
       - uses: actions/upload-artifact@v4
         with:
@@ -36,5 +36,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.1.${{ github.run_number }}"
-          gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "Functional camera preview: photos, videos, local saving and camera switching. Debug APK is not production-signed; release AAB is unsigned and NOT ready for Play Console. Pro, Night, Portrait, Panorama, Dual and Filters are planned."
+          TAG="v0.2.${{ github.run_number }}"
+          gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO v0.2.0: CameraX Photo/Video, 12 offline photo filters, low-light brightening, EV controls, device-aware zoom, adaptive SD/HD recording, built-in gallery/editor and low-RAM options. Preview effects need Android 12+; on older Android the effect is applied to JPEG output. Experimental build: device tests outstanding. Debug APK is test-signed; release AAB is unsigned, not Play-ready."

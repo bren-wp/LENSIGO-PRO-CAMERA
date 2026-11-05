@@ -4,54 +4,84 @@ import android.Manifest
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.RenderEffect
 import android.os.Build
 import android.os.Bundle
 import android.provider.MediaStore
+import android.net.Uri
 import android.widget.Toast
+import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.camera.core.AspectRatio
+import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
+import androidx.camera.core.FocusMeteringAction
 import androidx.camera.core.Preview
 import androidx.camera.lifecycle.ProcessCameraProvider
+import androidx.camera.video.FallbackStrategy
 import androidx.camera.video.MediaStoreOutputOptions
-import androidx.camera.video.PendingRecording
+import androidx.camera.video.Quality
+import androidx.camera.video.QualitySelector
 import androidx.camera.video.Recorder
 import androidx.camera.video.Recording
 import androidx.camera.video.VideoCapture
 import androidx.camera.video.VideoRecordEvent
 import androidx.camera.view.PreviewView
-import androidx.compose.foundation.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
+import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.grid.GridCells
+import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
+import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
-import java.text.SimpleDateFormat
-import java.util.Date
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
+import java.io.File
 import java.util.Locale
 
-private val Ink = Color(0xFF06121E)
+private val Black = Color(0xFF03080F)
+private val Navy = Color(0xFF0B2639)
 private val Cyan = Color(0xFF00D4FF)
-private val Muted = Color(0xFF9DB9C9)
-private enum class Mode(val title: String) {
-    PHOTO("FOTO"), VIDEO("VIDEO"), PRO("PRO"), NIGHT("NOĆ"),
-    PORTRAIT("PORTRET"), PANORAMA("PANORAMA"), DUAL("DUAL"), FILTERS("FILTERI")
+private val Blue = Color(0xFF2E83FF)
+private val Muted = Color(0xFF9DB5C4)
+private val White = Color(0xFFF7FCFF)
+
+private enum class Screen { HOME, CAMERA, GALLERY, VIEWER, SETTINGS, PRIVACY, ABOUT }
+private enum class CameraMode(val title: String) {
+    FILTERS("FILTERI"), VIDEO("VIDEO"), PHOTO("FOTO"), PRO("PRO"), NIGHT("NOĆ")
 }
 
 class MainActivity : ComponentActivity() {
@@ -59,194 +89,526 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         window.statusBarColor = android.graphics.Color.BLACK
         window.navigationBarColor = android.graphics.Color.BLACK
-        setContent { LensigoApp(
-            showGallery = {
-                val i = Intent(Intent.ACTION_VIEW, MediaStore.Images.Media.EXTERNAL_CONTENT_URI)
-                startActivity(i)
-            }
-        ) }
+        setContent { LensigoApplication() }
     }
 }
 
 @Composable
-private fun LensigoApp(showGallery: () -> Unit) {
-    val context = androidx.compose.ui.platform.LocalContext.current
+private fun LensigoApplication() {
+    val context = LocalContext.current
     val lifecycle = LocalLifecycleOwner.current
-    var mode by remember { mutableStateOf(Mode.PHOTO) }
+    val scope = rememberCoroutineScope()
+    val prefs = remember { context.getSharedPreferences("lensigo_preferences", 0) }
+    var screen by remember { mutableStateOf(Screen.CAMERA) }
+    var mode by remember { mutableStateOf(CameraMode.PHOTO) }
     var front by remember { mutableStateOf(false) }
-    var settings by remember { mutableStateOf(false) }
-    var granted by remember {
+    var aspectWide by remember { mutableStateOf(false) }
+    var preferSD by remember { mutableStateOf(prefs.getBoolean("video_sd", true)) }
+    var lowMemory by remember { mutableStateOf(prefs.getBoolean("low_memory", true)) }
+    var softenNoise by remember { mutableStateOf(prefs.getBoolean("noise", false)) }
+    var sharpen by remember { mutableStateOf(prefs.getBoolean("sharpen", false)) }
+    var jpegQuality by remember { mutableIntStateOf(prefs.getInt("quality", 92)) }
+    var filter by remember { mutableStateOf(LensFilter.ORIGINAL) }
+    var intensity by remember { mutableFloatStateOf(.85f) }
+    var brightness by remember { mutableFloatStateOf(0f) }
+    var contrast by remember { mutableFloatStateOf(1f) }
+    var saturation by remember { mutableFloatStateOf(1f) }
+    var flash by remember { mutableStateOf(false) }
+    var hasCameraPermission by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
     }
-    val request = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        granted = it[Manifest.permission.CAMERA] == true
+    var hasStoragePermission by remember {
+        mutableStateOf(Build.VERSION.SDK_INT >= 29 ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED)
     }
-    LaunchedEffect(Unit) {
-        if (!granted) request.launch(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO))
+    var hasMicPermission by remember {
+        mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
     }
-    var preview by remember { mutableStateOf<PreviewView?>(null) }
-    var photo by remember { mutableStateOf<ImageCapture?>(null) }
-    var video by remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
+    val requestCamera = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        hasCameraPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+        hasStoragePermission = Build.VERSION.SDK_INT >= 29 ||
+            ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
+    }
+    val requestMic = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        hasMicPermission = it
+    }
+    fun requestPermissions() {
+        requestCamera.launch(if (Build.VERSION.SDK_INT < 29)
+            arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
+            else arrayOf(Manifest.permission.CAMERA))
+    }
+    LaunchedEffect(Unit) { if (!hasCameraPermission) requestPermissions() }
+    var previewView by remember { mutableStateOf<PreviewView?>(null) }
+    var activeCamera by remember { mutableStateOf<Camera?>(null) }
+    var photoCapture by remember { mutableStateOf<ImageCapture?>(null) }
+    var videoCapture by remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
     var recording by remember { mutableStateOf<Recording?>(null) }
     var isRecording by remember { mutableStateOf(false) }
-    var cameraProvider by remember { mutableStateOf<ProcessCameraProvider?>(null) }
-    DisposableEffect(Unit) {
-        onDispose { recording?.stop(); cameraProvider?.unbindAll() }
-    }
+    var processing by remember { mutableStateOf(false) }
+    var currentExposure by remember { mutableIntStateOf(0) }
+    var exposureMin by remember { mutableIntStateOf(0) }
+    var exposureMax by remember { mutableIntStateOf(0) }
+    var zoomMin by remember { mutableFloatStateOf(1f) }
+    var zoomMax by remember { mutableFloatStateOf(1f) }
+    var currentZoom by remember { mutableFloatStateOf(1f) }
+    var lastPhoto by remember { mutableStateOf<Uri?>(null) }
+    var activeMedia by remember { mutableStateOf<LensMedia?>(null) }
+    val currentRecording by rememberUpdatedState(recording)
+    DisposableEffect(Unit) { onDispose { currentRecording?.stop() } }
 
-    LaunchedEffect(preview, front, granted) {
-        val pv = preview ?: return@LaunchedEffect
-        if (!granted) return@LaunchedEffect
-        try {
-            val provider = androidx.camera.lifecycle.ProcessCameraProvider.getInstance(context).get()
-            cameraProvider = provider
-            val p = Preview.Builder().build().also { it.surfaceProvider = pv.surfaceProvider }
-            val capture = ImageCapture.Builder().setCaptureMode(ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY).build()
-            val vid = VideoCapture.withOutput(Recorder.Builder().build())
-            val selector = if (front) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
-            provider.unbindAll()
-            provider.bindToLifecycle(lifecycle, selector, p, capture, vid)
-            photo = capture
-            video = vid
-        } catch (error: Exception) {
-            Toast.makeText(context, "Kamera nije dostupna: ${error.localizedMessage}", Toast.LENGTH_LONG).show()
+    val look = PhotoLook(
+        filter = if (mode == CameraMode.FILTERS) filter else LensFilter.ORIGINAL,
+        intensity = intensity,
+        brightness = if (mode == CameraMode.NIGHT) brightness.coerceAtLeast(.25f) else brightness,
+        contrast = contrast, saturation = saturation,
+        lowLight = mode == CameraMode.NIGHT, softenNoise = softenNoise, sharpen = sharpen
+    )
+    DisposableEffect(previewView, screen, front, mode, aspectWide, preferSD, hasCameraPermission) {
+        val view = previewView
+        if (view == null || screen != Screen.CAMERA || !hasCameraPermission) {
+            onDispose { }
+        } else {
+            var disposed = false
+            val future = ProcessCameraProvider.getInstance(context)
+            future.addListener({
+                if (!disposed) try {
+                    val provider = future.get()
+                    provider.unbindAll()
+                    val preview = Preview.Builder()
+                        .setTargetAspectRatio(if (aspectWide) AspectRatio.RATIO_16_9 else AspectRatio.RATIO_4_3)
+                        .build().also { it.surfaceProvider = view.surfaceProvider }
+                    val selector = if (front) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
+                    val recordingMode = mode == CameraMode.VIDEO
+                    val camera = if (recordingMode) {
+                        val preferred = if (preferSD) Quality.SD else Quality.HD
+                        val selectorQuality = QualitySelector.fromOrderedList(
+                            if (preferSD) listOf(Quality.SD, Quality.HD) else listOf(Quality.HD, Quality.SD),
+                            FallbackStrategy.lowerQualityOrHigherThan(preferred)
+                        )
+                        val capture = VideoCapture.withOutput(
+                            Recorder.Builder().setQualitySelector(selectorQuality).build())
+                        videoCapture = capture
+                        photoCapture = null
+                        provider.bindToLifecycle(lifecycle, selector, preview, capture)
+                    } else {
+                        val capture = ImageCapture.Builder()
+                            .setTargetAspectRatio(if (aspectWide) AspectRatio.RATIO_16_9 else AspectRatio.RATIO_4_3)
+                            .setCaptureMode(if (mode == CameraMode.NIGHT)
+                                ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY
+                                else ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
+                            .build()
+                        photoCapture = capture
+                        videoCapture = null
+                        provider.bindToLifecycle(lifecycle, selector, preview, capture)
+                    }
+                    activeCamera = camera
+                    val exposure = camera.cameraInfo.exposureState
+                    exposureMin = exposure.exposureCompensationRange.lower
+                    exposureMax = exposure.exposureCompensationRange.upper
+                    currentExposure = exposure.exposureCompensationIndex
+                    val z = camera.cameraInfo.zoomState.value
+                    zoomMin = z?.minZoomRatio ?: 1f
+                    zoomMax = z?.maxZoomRatio ?: 1f
+                    currentZoom = z?.zoomRatio ?: 1f
+                } catch (e: Exception) {
+                    activeCamera = null; photoCapture = null; videoCapture = null
+                    Toast.makeText(context, "Kamera nije dostupna: " + e.localizedMessage,
+                        Toast.LENGTH_LONG).show()
+                }
+            }, ContextCompat.getMainExecutor(context))
+            onDispose {
+                disposed = true
+                if (future.isDone) try { future.get().unbindAll() } catch (_: Exception) {}
+            }
         }
     }
-
-    fun takePhoto() {
-        val capture = photo ?: return
-        val filename = "LENSIGO_" + SimpleDateFormat("yyyyMMdd_HHmmss", Locale.US).format(Date()) + ".jpg"
-        val values = ContentValues().apply {
-            put(MediaStore.MediaColumns.DISPLAY_NAME, filename)
-            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
-            if (Build.VERSION.SDK_INT >= 29) put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/LENSIGO")
-        }
-        val output = ImageCapture.OutputFileOptions.Builder(
-            context.contentResolver, MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values
-        ).build()
-        capture.takePicture(output, ContextCompat.getMainExecutor(context), object : ImageCapture.OnImageSavedCallback {
-            override fun onImageSaved(result: ImageCapture.OutputFileResults) {
-                Toast.makeText(context, "Fotografija spremljena", Toast.LENGTH_SHORT).show()
-            }
-            override fun onError(exception: ImageCaptureException) {
-                Toast.makeText(context, "Pogreška: ${exception.message}", Toast.LENGTH_LONG).show()
-            }
-        })
+    LaunchedEffect(previewView, flash, mode, activeCamera) {
+        photoCapture?.flashMode = if (flash) ImageCapture.FLASH_MODE_ON else ImageCapture.FLASH_MODE_OFF
+        activeCamera?.cameraControl?.enableTorch(flash && mode == CameraMode.VIDEO)
     }
-
-    fun toggleVideo() {
+    LaunchedEffect(previewView, look, mode) {
+        val view = previewView ?: return@LaunchedEffect
+        if (Build.VERSION.SDK_INT >= 31) {
+            view.setRenderEffect(
+                if (look.isNeutral) null else RenderEffect.createColorFilterEffect(FilterEngine.colorFilter(look))
+            )
+        }
+    }
+    fun setMode(next: CameraMode) {
+        if (isRecording || processing) return
+        mode = next
+        brightness = 0f; contrast = 1f; saturation = 1f
+        flash = false
+    }
+    fun capturePhoto() {
+        if (processing) return
+        if (!hasStoragePermission) { requestPermissions(); return }
+        val capture = photoCapture ?: return
+        processing = true
+        val file = File.createTempFile("lensigo_capture_", ".jpg", context.cacheDir)
+        capture.takePicture(ImageCapture.OutputFileOptions.Builder(file).build(),
+            ContextCompat.getMainExecutor(context), object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(output: ImageCapture.OutputFileResults) {
+                    scope.launch {
+                        try {
+                            val uri = withContext(Dispatchers.IO) {
+                                try { MediaLibrary.saveImage(context, file, look, jpegQuality, lowMemory) }
+                                finally { file.delete() }
+                            }
+                            lastPhoto = uri
+                            Toast.makeText(context, "Fotografija spremljena", Toast.LENGTH_SHORT).show()
+                        } catch (e: Exception) {
+                            Toast.makeText(context, "Spremanje nije uspjelo: " + e.localizedMessage,
+                                Toast.LENGTH_LONG).show()
+                        } finally { processing = false }
+                    }
+                }
+                override fun onError(error: ImageCaptureException) {
+                    file.delete(); processing = false
+                    Toast.makeText(context, "Snimanje nije uspjelo: " + error.message, Toast.LENGTH_LONG).show()
+                }
+            })
+    }
+    fun toggleRecording() {
         if (isRecording) {
             recording?.stop()
-            recording = null
-            isRecording = false
             return
         }
-        val vc = video ?: return
+        if (!hasStoragePermission) { requestPermissions(); return }
+        val capture = videoCapture ?: return
         val values = ContentValues().apply {
             put(MediaStore.MediaColumns.DISPLAY_NAME, "LENSIGO_" + System.currentTimeMillis() + ".mp4")
             put(MediaStore.MediaColumns.MIME_TYPE, "video/mp4")
-            if (Build.VERSION.SDK_INT >= 29) put(MediaStore.MediaColumns.RELATIVE_PATH, "Movies/LENSIGO")
-        }
-        val options = MediaStoreOutputOptions.Builder(
-            context.contentResolver, MediaStore.Video.Media.EXTERNAL_CONTENT_URI
-        ).setContentValues(values).build()
-        val pending: PendingRecording = vc.output.prepareRecording(context, options)
-        val withAudio = if (ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED) pending.withAudioEnabled() else pending
-        recording = withAudio.start(ContextCompat.getMainExecutor(context)) { event ->
-            if (event is VideoRecordEvent.Finalize) {
-                isRecording = false
-                recording = null
-                val message = if (event.hasError()) "Pogreška snimanja: ${event.error}" else "Videozapis spremljen"
-                Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            if (Build.VERSION.SDK_INT >= 29) {
+                put(MediaStore.MediaColumns.RELATIVE_PATH, "Movies/LENSIGO")
             }
         }
-        isRecording = true
+        try {
+            val options = MediaStoreOutputOptions.Builder(
+                context.contentResolver, MediaStore.Video.Media.EXTERNAL_CONTENT_URI
+            ).setContentValues(values).build()
+            val pending = capture.output.prepareRecording(context, options)
+            val configured = if (hasMicPermission) pending.withAudioEnabled() else pending
+            recording = configured.start(ContextCompat.getMainExecutor(context)) { event ->
+                if (event is VideoRecordEvent.Finalize) {
+                    isRecording = false
+                    recording = null
+                    if (event.hasError()) {
+                        Toast.makeText(context, "Snimanje nije uspjelo: " + event.error,
+                            Toast.LENGTH_LONG).show()
+                    } else {
+                        Toast.makeText(context, "Video spremljen", Toast.LENGTH_SHORT).show()
+                    }
+                }
+            }
+            isRecording = true
+        } catch (e: Exception) {
+            isRecording = false
+            Toast.makeText(context, "Video nije dostupan: " + e.localizedMessage, Toast.LENGTH_LONG).show()
+        }
+    }
+    fun openFromCamera() {
+        if (isRecording) return
+        screen = Screen.GALLERY
+    }
+    fun moveTo(next: Screen) {
+        if (isRecording) return
+        screen = next
     }
 
-    MaterialTheme(colorScheme = darkColorScheme(primary = Cyan, background = Ink, surface = Ink)) {
-        Column(Modifier.fillMaxSize().background(Ink)) {
-            Row(
-                Modifier.fillMaxWidth().padding(horizontal = 18.dp, vertical = 12.dp),
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text("LENSIGO", fontSize = 21.sp, fontWeight = FontWeight.Bold, color = Color.White)
-                Text("PRO CAMERA", fontSize = 11.sp, color = Cyan)
-                TextButton(onClick = { settings = !settings }) { Text(if (settings) "ZATVORI" else "⚙", color = Color.White) }
-            }
-            if (settings) {
-                Column(Modifier.fillMaxWidth().padding(20.dp), verticalArrangement = Arrangement.spacedBy(16.dp)) {
-                    Text("Postavke", fontSize = 26.sp, color = Color.White, fontWeight = FontWeight.Bold)
-                    Text("LENSIGO · by Brendigo", color = Cyan)
-                    Text("Fotografije: Pictures/LENSIGO", color = Color.White)
-                    Text("Videozapisi: Movies/LENSIGO", color = Color.White)
-                    Text("Privatnost: fotografije se snimaju lokalno na uređaju.", color = Muted)
-                    Text("Verzija 0.1.0 — početna funkcionalna verzija.", color = Muted)
-                    Button(onClick = showGallery) { Text("Otvori galeriju") }
-                }
-                Spacer(Modifier.weight(1f))
-            } else {
-                Box(Modifier.weight(1f).fillMaxWidth().background(Color.Black)) {
-                    if (granted) {
-                        AndroidView(
-                            factory = { ctx -> PreviewView(ctx).also { preview = it } },
-                            modifier = Modifier.fillMaxSize()
-                        )
-                    } else {
-                        Column(Modifier.align(Alignment.Center), horizontalAlignment = Alignment.CenterHorizontally) {
-                            Text("Za rad kamere potrebna je dozvola", color = Color.White, textAlign = TextAlign.Center)
-                            Button(onClick = { request.launch(arrayOf(Manifest.permission.CAMERA, Manifest.permission.RECORD_AUDIO)) }) { Text("Dopusti kameru") }
+    MaterialTheme(colorScheme = darkColorScheme(
+        primary = Cyan, background = Black, surface = Navy, onBackground = White,
+        onSurface = White
+    )) {
+        Box(Modifier.fillMaxSize().background(Black).windowInsetsPadding(WindowInsets.safeDrawing)) {
+            when (screen) {
+                Screen.CAMERA -> Column(Modifier.fillMaxSize()) {
+                    Row(
+                        Modifier.fillMaxWidth().height(55.dp).background(Black)
+                            .padding(horizontal = 18.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        IconButton(onClick = {
+                            if (activeCamera?.cameraInfo?.hasFlashUnit() == true) flash = !flash
+                            else Toast.makeText(context, "Ova kamera nema bljeskalicu", Toast.LENGTH_SHORT).show()
+                        }) {
+                            Icon(if (flash) Icons.Default.FlashOn else Icons.Default.FlashOff,
+                                "Bljeskalica", tint = White)
+                        }
+                        Text(if (mode == CameraMode.VIDEO) (if (preferSD) "SD" else "HD") else "AUTO",
+                            color = White, fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.clickable {
+                                if (mode == CameraMode.VIDEO && !isRecording) {
+                                    preferSD = !preferSD
+                                    prefs.edit().putBoolean("video_sd", preferSD).apply()
+                                }
+                            })
+                        Text(if (aspectWide) "16:9" else "4:3",
+                            color = White, fontWeight = FontWeight.SemiBold,
+                            modifier = Modifier.clickable { if (!isRecording) aspectWide = !aspectWide })
+                        IconButton(onClick = { moveTo(Screen.SETTINGS) }) {
+                            Icon(Icons.Default.Settings, "Postavke", tint = White)
                         }
                     }
-                    Text("LENSIGO", Modifier.align(Alignment.TopCenter).padding(top = 14.dp), color = Color.White.copy(alpha = .65f), fontSize = 12.sp)
-                }
-                LazyRow(
-                    Modifier.fillMaxWidth().padding(vertical = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(20.dp),
-                    contentPadding = PaddingValues(horizontal = 18.dp)
-                ) {
-                    items(Mode.entries) { item ->
-                        Text(
-                            item.title,
-                            modifier = Modifier.clickable {
-                                if (isRecording) return@clickable
-                                mode = item
-                                if (item !in listOf(Mode.PHOTO, Mode.VIDEO)) {
-                                    Toast.makeText(context, "${item.title}: uskoro", Toast.LENGTH_SHORT).show()
+                    Box(Modifier.weight(1f).fillMaxWidth().background(Color.Black)) {
+                        if (hasCameraPermission) {
+                            AndroidView(factory = { ctx -> PreviewView(ctx).apply {
+                                implementationMode = PreviewView.ImplementationMode.COMPATIBLE
+                                scaleType = PreviewView.ScaleType.FILL_CENTER
+                                previewView = this
+                            } }, modifier = Modifier.fillMaxSize(), update = { previewView = it })
+                            Box(Modifier.fillMaxSize().pointerInput(activeCamera) {
+                                detectTapGestures { pos ->
+                                    val view = previewView ?: return@detectTapGestures
+                                    val point = view.meteringPointFactory.createPoint(pos.x, pos.y)
+                                    activeCamera?.cameraControl?.startFocusAndMetering(
+                                        FocusMeteringAction.Builder(point).build())
                                 }
-                            },
-                            color = if (mode == item) Cyan else Muted,
-                            fontWeight = if (mode == item) FontWeight.Bold else FontWeight.Normal,
-                            fontSize = 13.sp
-                        )
+                            })
+                            FocusCorners(Modifier.align(Alignment.Center).size(78.dp))
+                        } else {
+                            Column(Modifier.align(Alignment.Center).padding(20.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally) {
+                                Text("Dopusti pristup kameri", color = White, fontSize = 18.sp)
+                                Spacer(Modifier.height(12.dp))
+                                Button(onClick = ::requestPermissions) { Text("Dopusti") }
+                            }
+                        }
+                        Row(Modifier.align(Alignment.TopStart).padding(14.dp), verticalAlignment = Alignment.CenterVertically) {
+                            Text("LENSIGO", color = White, fontSize = 12.sp, fontWeight = FontWeight.Bold,
+                                modifier = Modifier.clickable { moveTo(Screen.HOME) })
+                            Spacer(Modifier.width(12.dp))
+                            Text("PRO", color = Cyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                        if (mode == CameraMode.FILTERS) {
+                            Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 76.dp)) {
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    contentPadding = PaddingValues(horizontal = 10.dp)
+                                ) {
+                                    items(LensFilter.entries) { item ->
+                                        FilterChip(
+                                            selected = filter == item,
+                                            onClick = { filter = item },
+                                            label = { Text(item.title, fontSize = 12.sp) },
+                                            colors = FilterChipDefaults.filterChipColors(
+                                                selectedContainerColor = Cyan,
+                                                selectedLabelColor = Black,
+                                                containerColor = Black.copy(alpha = .74f),
+                                                labelColor = White
+                                            )
+                                        )
+                                    }
+                                }
+                                Slider(value = intensity, onValueChange = { intensity = it },
+                                    modifier = Modifier.padding(horizontal = 23.dp).height(32.dp))
+                            }
+                        }
+                        if (mode == CameraMode.NIGHT) {
+                            Text("NOĆ · lokalno posvjetljivanje", color = White,
+                                fontSize = 12.sp,
+                                modifier = Modifier.align(Alignment.BottomCenter)
+                                    .padding(bottom = 78.dp)
+                                    .background(Black.copy(alpha = .72f), RoundedCornerShape(12.dp))
+                                    .padding(9.dp))
+                        }
+                        Row(
+                            Modifier.align(Alignment.BottomCenter).padding(bottom = 13.dp)
+                                .background(Black.copy(alpha = .83f), RoundedCornerShape(40.dp))
+                                .padding(horizontal = 8.dp, vertical = 4.dp),
+                            horizontalArrangement = Arrangement.spacedBy(6.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            listOf(.6f, 1f, 2f, 5f).filter { it >= zoomMin - .01f && it <= zoomMax + .01f }
+                                .forEach { ratio ->
+                                    val selected = kotlin.math.abs(currentZoom - ratio) < .15f
+                                    Box(Modifier.size(width = 48.dp, height = 34.dp)
+                                        .background(if (selected) Cyan else Color.Transparent, CircleShape)
+                                        .clickable {
+                                            activeCamera?.cameraControl?.setZoomRatio(ratio)
+                                            currentZoom = ratio
+                                        }, contentAlignment = Alignment.Center) {
+                                        Text(if (ratio == .6f) "0.6" else ratio.toInt().toString() + "x",
+                                            color = if (selected) Black else White,
+                                            fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
+                                    }
+                                }
+                        }
                     }
-                }
-                Row(
-                    Modifier.fillMaxWidth().padding(bottom = 28.dp, top = 8.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.SpaceEvenly
-                ) {
-                    TextButton(onClick = showGallery) { Text("GALERIJA", color = Color.White, fontSize = 12.sp) }
-                    Box(
-                        Modifier.size(76.dp)
-                            .border(3.dp, Color.White, CircleShape).padding(6.dp)
-                            .background(if (mode == Mode.VIDEO) Color(0xFFFF3B42) else Color.White, CircleShape)
-                            .clickable {
-                                when (mode) {
-                                    Mode.PHOTO -> takePhoto()
-                                    Mode.VIDEO -> toggleVideo()
-                                    else -> Toast.makeText(context, "Način je u razvoju", Toast.LENGTH_SHORT).show()
-                                }
-                            },
-                        contentAlignment = Alignment.Center
+                    if (mode == CameraMode.PRO || mode == CameraMode.NIGHT) {
+                        val min = exposureMin
+                        val max = exposureMax
+                        if (max > min) {
+                            Row(Modifier.fillMaxWidth().height(45.dp).padding(horizontal = 16.dp),
+                                verticalAlignment = Alignment.CenterVertically) {
+                                Text("EV", fontSize = 12.sp, color = Cyan)
+                                Slider(value = currentExposure.toFloat(), valueRange = min.toFloat()..max.toFloat(),
+                                    steps = (max - min - 1).coerceAtLeast(0),
+                                    onValueChange = { v ->
+                                        val value = v.toInt().coerceIn(min, max)
+                                        activeCamera?.cameraControl?.setExposureCompensationIndex(value)
+                                        currentExposure = value
+                                    }, modifier = Modifier.weight(1f).padding(horizontal = 12.dp))
+                                Text(currentExposure.toString(), color = White, fontSize = 12.sp)
+                            }
+                        }
+                    }
+                    LazyRow(
+                        Modifier.fillMaxWidth().height(51.dp).background(Black),
+                        horizontalArrangement = Arrangement.spacedBy(27.dp),
+                        contentPadding = PaddingValues(horizontal = 32.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        if (isRecording) Box(Modifier.size(24.dp).background(Color.White, RoundedCornerShape(5.dp)))
+                        items(CameraMode.entries) { item ->
+                            Text(item.title, fontSize = 13.sp,
+                                fontWeight = if (mode == item) FontWeight.Bold else FontWeight.Normal,
+                                color = if (mode == item) Cyan else Muted,
+                                modifier = Modifier.clickable { setMode(item) })
+                        }
                     }
-                    TextButton(onClick = { if (!isRecording) front = !front }) {
-                        Text("↻", color = Color.White, fontSize = 33.sp)
+                    Row(Modifier.fillMaxWidth().height(115.dp).background(Black)
+                        .padding(bottom = 13.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceEvenly
+                    ) {
+                        IconButton(onClick = ::openFromCamera, modifier = Modifier.size(54.dp)) {
+                            Icon(Icons.Default.PhotoLibrary, "Galerija", tint = White,
+                                modifier = Modifier.size(28.dp))
+                        }
+                        Box(Modifier.size(78.dp).border(3.dp, White, CircleShape).padding(6.dp)
+                            .background(if (mode == CameraMode.VIDEO) Color(0xFFEB3D43) else White, CircleShape)
+                            .clickable(enabled = !processing && hasCameraPermission) {
+                                if (mode == CameraMode.VIDEO) toggleRecording() else capturePhoto()
+                            }, contentAlignment = Alignment.Center) {
+                            if (isRecording) Box(Modifier.size(26.dp)
+                                .background(White, RoundedCornerShape(6.dp)))
+                            if (processing) CircularProgressIndicator(Modifier.size(26.dp),
+                                color = Black, strokeWidth = 3.dp)
+                        }
+                        IconButton(onClick = { if (!isRecording && !processing) front = !front },
+                            modifier = Modifier.size(54.dp)) {
+                            Icon(Icons.Default.Cameraswitch, "Promijeni kameru", tint = White,
+                                modifier = Modifier.size(31.dp))
+                        }
                     }
+                }
+                Screen.HOME -> PageScaffold("LENSIGO", onBack = { moveTo(Screen.CAMERA) }) {
+                    Text("PRO CAMERA", color = Cyan, fontSize = 19.sp, fontWeight = FontWeight.Bold)
+                    Text("Svaki kadar. Tvoja priča.", color = Muted)
+                    Spacer(Modifier.height(18.dp))
+                    val routes = listOf(
+                        "📷  Foto" to CameraMode.PHOTO,
+                        "🎬  Video" to CameraMode.VIDEO,
+                        "✨  Filteri" to CameraMode.FILTERS,
+                        "🌙  Noćni" to CameraMode.NIGHT,
+                        "⚙️  Pro EV" to CameraMode.PRO
+                    )
+                    routes.forEach { (name, target) ->
+                        Button(onClick = { setMode(target); moveTo(Screen.CAMERA) },
+                            modifier = Modifier.fillMaxWidth()) { Text(name) }
+                    }
+                    Text("Panorama, dual kamera i portretne maske planirani su za sljedeće faze.",
+                        color = Muted, fontSize = 13.sp)
+                    Button(onClick = { moveTo(Screen.GALLERY) }, modifier = Modifier.fillMaxWidth()) {
+                        Icon(Icons.Default.PhotoLibrary, null); Spacer(Modifier.width(8.dp))
+                        Text("Galerija")
+                    }
+                }
+                Screen.GALLERY -> GalleryScreen(
+                    onBack = { moveTo(Screen.CAMERA) },
+                    onOpen = { activeMedia = it; moveTo(Screen.VIEWER) }
+                )
+                Screen.VIEWER -> {
+                    val item = activeMedia
+                    if (item != null) {
+                        ViewerScreen(item = item, quality = jpegQuality, lowMemory = lowMemory,
+                            onBack = { moveTo(Screen.GALLERY) },
+                            onSaved = {
+                                Toast.makeText(context, "Uređena fotografija spremljena", Toast.LENGTH_SHORT).show()
+                                moveTo(Screen.GALLERY)
+                            })
+                    }
+                }
+                Screen.SETTINGS -> PageScaffold("Postavke", onBack = { moveTo(Screen.CAMERA) }) {
+                    SettingToggle("Štedljiva obrada (2048 px)", "Manje memorije, brži filtri",
+                        lowMemory) { lowMemory = it; prefs.edit().putBoolean("low_memory", it).apply() }
+                    SettingToggle("Smanjenje šuma", "Blago zaglađivanje jednobojnih površina",
+                        softenNoise) { softenNoise = it; prefs.edit().putBoolean("noise", it).apply() }
+                    SettingToggle("Dodatno izoštravanje", "Pojačava rubove; može pojačati šum",
+                        sharpen) { sharpen = it; prefs.edit().putBoolean("sharpen", it).apply() }
+                    SettingToggle("SD video (za slabije uređaje)", "Prednost kompatibilnosti i manjoj datoteci",
+                        preferSD) { preferSD = it; prefs.edit().putBoolean("video_sd", it).apply() }
+                    Text("JPEG kvaliteta: " + jpegQuality + "%", color = White)
+                    Slider(value = jpegQuality.toFloat(), valueRange = 70f..100f,
+                        onValueChange = { jpegQuality = it.toInt() },
+                        onValueChangeFinished = { prefs.edit().putInt("quality", jpegQuality).apply() })
+                    Button(onClick = { requestMic.launch(Manifest.permission.RECORD_AUDIO) }) {
+                        Text(if (hasMicPermission) "Mikrofon dopušten" else "Dopusti mikrofon za video")
+                    }
+                    HorizontalDivider()
+                    TextButton(onClick = { moveTo(Screen.PRIVACY) }) { Text("Privatnost i dozvole") }
+                    TextButton(onClick = { moveTo(Screen.ABOUT) }) { Text("O aplikaciji") }
+                }
+                Screen.PRIVACY -> PageScaffold("Privatnost", onBack = { moveTo(Screen.SETTINGS) }) {
+                    Text("LENSIGO obrađuje fotografije lokalno, bez slanja podataka na poslužitelj.",
+                        color = White)
+                    Text("Kamera je potrebna za fotografiranje, mikrofon samo za video sa zvukom. Na Androidu 7–9 za spremanje u javnu galeriju traži se dozvola za pohranu.",
+                        color = Muted)
+                    Text("Aplikacija nema INTERNET dozvolu, telemetriju ni korisničke račune.",
+                        color = Cyan)
+                }
+                Screen.ABOUT -> PageScaffold("O aplikaciji", onBack = { moveTo(Screen.SETTINGS) }) {
+                    Text("LENSIGO", color = White, fontSize = 31.sp, fontWeight = FontWeight.Bold)
+                    Text("PRO CAMERA · BY BRENDIGO", color = Cyan)
+                    Text("Svaki kadar. Tvoja priča.", color = Muted)
+                    Text("Verzija 0.2.0 · www.brendigo.com", color = White)
+                    Text("Fotografiranje, videosnimanje, lokalni filtri, podešavanje ekspozicije i galerija.",
+                        color = Muted)
                 }
             }
         }
+    }
+}
+
+@Composable
+private fun FocusCorners(modifier: Modifier = Modifier) {
+    Canvas(modifier) {
+        val stroke = 2.dp.toPx()
+        val corner = size.width * .25f
+        val w = size.width; val h = size.height
+        val segments = listOf(
+            Pair(Offset(0f, corner), Offset(0f,0f)), Pair(Offset(0f,0f), Offset(corner,0f)),
+            Pair(Offset(w-corner,0f), Offset(w,0f)), Pair(Offset(w,0f), Offset(w,corner)),
+            Pair(Offset(0f,h-corner), Offset(0f,h)), Pair(Offset(0f,h), Offset(corner,h)),
+            Pair(Offset(w-corner,h), Offset(w,h)), Pair(Offset(w,h), Offset(w,h-corner))
+        )
+        segments.forEach { (a,b) -> drawLine(White, a, b, strokeWidth = stroke) }
+    }
+}
+
+@Composable
+private fun PageScaffold(title: String, onBack: () -> Unit,
+                         body: @Composable ColumnScope.() -> Unit) {
+    Column(Modifier.fillMaxSize().background(Black)) {
+        Row(Modifier.fillMaxWidth().height(60.dp),
+            verticalAlignment = Alignment.CenterVertically) {
+            IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Natrag", tint = White) }
+            Text(title, color = White, fontWeight = FontWeight.Bold, fontSize = 21.sp)
+        }
+        Column(Modifier.fillMaxSize().verticalScroll(androidx.compose.foundation.rememberScrollState())
+            .padding(18.dp), verticalArrangement = Arrangement.spacedBy(13.dp), content = body)
+    }
+}
+
+@Composable
+private fun SettingToggle(title: String, subtitle: String, value: Boolean, changed: (Boolean) -> Unit) {
+    Row(Modifier.fillMaxWidth().clickable { changed(!value) }.padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically) {
+        Column(Modifier.weight(1f)) {
+            Text(title, color = White, fontWeight = FontWeight.SemiBold)
+            Text(subtitle, color = Muted, fontSize = 12.sp)
+        }
+        Switch(checked = value, onCheckedChange = changed)
     }
 }
