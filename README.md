@@ -8,13 +8,15 @@
 
 LENSIGO je Brendigo Android kamera s jednostavnim sučeljem, lokalnim efektima i postavkama optimiziranima za slabije uređaje. Bez računa, oglasa, telemetrije ili internetske dozvole.
 
-### ✨ Stvarne mogućnosti u verziji 0.2.0
+### ✨ Stvarne mogućnosti u verziji 0.3.0
 
 | 📸 Foto | 🎞️ Video | 🎨 Filteri | 💡 Poboljšanja |
 |---|---|---|---|
 | Fokus dodirom, omjer 4:3/16:9, zum, bljeskalica | Snimanje SD/HD prema dostupnosti uređaja; mikrofon samo uz dozvolu | 12 lokalnih efekata s regulacijom intenziteta | EV kompenzacija, posvjetljivanje noćnih snimaka, blago zaglađivanje šuma, izoštravanje |
 | 📁 Galerija | 🪄 Uređivanje | 📱 Kompatibilnost | 🔐 Privatnost |
 | Snimke kreirane aplikacijom | Svjetlina, kontrast, zasićenost, filtri i spremanje nove kopije | Android 7.0+, način ograničene memorije | MediaStore, lokalna obrada, bez cloud servisa |
+
+**Pro 0.3.0:** Ručni ISO, brzina zatvarača, WB i MF putem Camera2 podržani su samo kad hardver izloži odgovarajuće karakteristike; u suprotnom kontrole su onemogućene, uz EV kompenzaciju kada je dostupna. **Noć 0.3.0:** proizvođački Night dodatak kada je dostupan, inače lokalno posvjetljivanje. **Portret 0.3.0:** proizvođački Bokeh kada je dostupan, inače umjetničko zamućenje izvan središta kadra koje ne prepoznaje obris osobe.
 
 **12 efekata:** Original · Vivid · Film · Mono · Warm · Cool · Vintage · Fade · Dramatic · Sepia · Noir · Sunset.
 
@@ -47,7 +49,7 @@ GitHub Actions nakon **uspješnog** builda objavljuje novi preview Release s `ap
 
 ### 🧭 Ostalo u planu
 
-Portretno zamućenje, panorama, dual kamera, ručni ISO/shutter/focus, napredni višekadarski Night Mode i potpuni pixel-by-pixel audit 19 zaslona. Neaktivne funkcije nisu predstavljene kao gotove.
+Napredna segmentacija osobe u portretnom načinu, panorama, dual kamera, RAW/DNG, složenije postavke fokusa i višekadarski Night Mode za uređaje bez proizvođačkog dodatka i potpuni pixel-by-pixel audit 19 zaslona. Neaktivne funkcije nisu predstavljene kao gotove.
 
 ### 🔒 Privatnost i licenca
 

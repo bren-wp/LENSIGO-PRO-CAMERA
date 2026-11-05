@@ -18,6 +18,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.extensions.ExtensionsManager
+import androidx.camera.extensions.ExtensionMode
 import androidx.camera.core.ImageCapture
 import androidx.camera.core.ImageCaptureException
 import androidx.camera.core.FocusMeteringAction
@@ -68,6 +70,7 @@ import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.io.File
@@ -82,7 +85,8 @@ private val White = Color(0xFFF7FCFF)
 
 private enum class Screen { HOME, CAMERA, GALLERY, VIEWER, SETTINGS, PRIVACY, ABOUT }
 private enum class CameraMode(val title: String) {
-    FILTERS("FILTERI"), VIDEO("VIDEO"), PHOTO("FOTO"), PRO("PRO"), NIGHT("NOĆ")
+    VIDEO("VIDEO"), PHOTO("FOTO"), PRO("PRO"), NIGHT("NOĆ"),
+    PORTRAIT("PORTRET"), FILTERS("FILTERI")
 }
 
 class MainActivity : ComponentActivity() {
@@ -115,6 +119,10 @@ private fun LensigoApplication() {
     var contrast by remember { mutableFloatStateOf(1f) }
     var saturation by remember { mutableFloatStateOf(1f) }
     var flash by remember { mutableStateOf(false) }
+    var portraitBlur by remember { mutableFloatStateOf(.60f) }
+    var vendorEffect by remember { mutableStateOf(false) }
+    var proCapabilities by remember { mutableStateOf<ProCapabilities?>(null) }
+    var proValues by remember { mutableStateOf(ProValues()) }
     var hasCameraPermission by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED)
     }
@@ -160,9 +168,12 @@ private fun LensigoApplication() {
     val look = PhotoLook(
         filter = if (mode == CameraMode.FILTERS) filter else LensFilter.ORIGINAL,
         intensity = intensity,
-        brightness = if (mode == CameraMode.NIGHT) brightness.coerceAtLeast(.25f) else brightness,
+        brightness = if (mode == CameraMode.NIGHT && !vendorEffect)
+            brightness.coerceAtLeast(.15f) else brightness,
         contrast = contrast, saturation = saturation,
-        lowLight = mode == CameraMode.NIGHT, softenNoise = softenNoise, sharpen = sharpen
+        lowLight = mode == CameraMode.NIGHT && !vendorEffect,
+        softenNoise = softenNoise, sharpen = sharpen,
+        portraitBlur = if (mode == CameraMode.PORTRAIT && !vendorEffect) portraitBlur else 0f
     )
     DisposableEffect(previewView, screen, front, mode, aspectWide, preferSD, hasCameraPermission) {
         val view = previewView
@@ -180,7 +191,22 @@ private fun LensigoApplication() {
                         .build().also { it.surfaceProvider = view.surfaceProvider }
                     val selector = if (front) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
                     val recordingMode = mode == CameraMode.VIDEO
-                    val camera = if (recordingMode) {
+                    fun onBound(camera: Camera, manufacturerExtension: Boolean) {
+                        if (disposed) return
+                        activeCamera = camera
+                        vendorEffect = manufacturerExtension
+                        proCapabilities = if (mode == CameraMode.PRO)
+                            ProCameraControl.capabilities(camera) else null
+                        val exposure = camera.cameraInfo.exposureState
+                        exposureMin = exposure.exposureCompensationRange.lower
+                        exposureMax = exposure.exposureCompensationRange.upper
+                        currentExposure = exposure.exposureCompensationIndex
+                        val z = camera.cameraInfo.zoomState.value
+                        zoomMin = z?.minZoomRatio ?: 1f
+                        zoomMax = z?.maxZoomRatio ?: 1f
+                        currentZoom = z?.zoomRatio ?: 1f
+                    }
+                    if (recordingMode) {
                         val preferred = if (preferSD) Quality.SD else Quality.HD
                         val selectorQuality = QualitySelector.fromOrderedList(
                             if (preferSD) listOf(Quality.SD, Quality.HD) else listOf(Quality.HD, Quality.SD),
@@ -188,9 +214,8 @@ private fun LensigoApplication() {
                         )
                         val capture = VideoCapture.withOutput(
                             Recorder.Builder().setQualitySelector(selectorQuality).build())
-                        videoCapture = capture
-                        photoCapture = null
-                        provider.bindToLifecycle(lifecycle, selector, preview, capture)
+                        videoCapture = capture; photoCapture = null
+                        onBound(provider.bindToLifecycle(lifecycle, selector, preview, capture), false)
                     } else {
                         val capture = ImageCapture.Builder()
                             .setTargetAspectRatio(if (aspectWide) AspectRatio.RATIO_16_9 else AspectRatio.RATIO_4_3)
@@ -198,19 +223,43 @@ private fun LensigoApplication() {
                                 ImageCapture.CAPTURE_MODE_MAXIMIZE_QUALITY
                                 else ImageCapture.CAPTURE_MODE_MINIMIZE_LATENCY)
                             .build()
-                        photoCapture = capture
-                        videoCapture = null
-                        provider.bindToLifecycle(lifecycle, selector, preview, capture)
+                        photoCapture = capture; videoCapture = null
+                        val ext = when (mode) {
+                            CameraMode.NIGHT -> ExtensionMode.NIGHT
+                            CameraMode.PORTRAIT -> ExtensionMode.BOKEH
+                            else -> null
+                        }
+                        if (ext == null) {
+                            onBound(provider.bindToLifecycle(lifecycle, selector, preview, capture), false)
+                        } else {
+                            // Vendor Night/Bokeh is optional; on incompatible hardware use
+                            // the real local enhancement path, never a fake extension.
+                            val extensionFuture = ExtensionsManager.getInstanceAsync(context, provider)
+                            extensionFuture.addListener({
+                                if (!disposed) {
+                                    val supportedCamera = try {
+                                        val manager = extensionFuture.get()
+                                        if (manager.isExtensionAvailable(selector, ext)) {
+                                            val enabled = manager.getExtensionEnabledCameraSelector(selector, ext)
+                                            provider.bindToLifecycle(lifecycle, enabled, preview, capture)
+                                        } else null
+                                    } catch (_: Exception) { null }
+                                    if (!disposed) try {
+                                        if (supportedCamera != null) {
+                                            onBound(supportedCamera, true)
+                                        } else {
+                                            provider.unbindAll()
+                                            onBound(provider.bindToLifecycle(lifecycle, selector, preview, capture), false)
+                                        }
+                                    } catch (e: Exception) {
+                                        activeCamera = null
+                                        Toast.makeText(context, "Kamera nije dostupna: " + e.localizedMessage,
+                                            Toast.LENGTH_LONG).show()
+                                    }
+                                }
+                            }, ContextCompat.getMainExecutor(context))
+                        }
                     }
-                    activeCamera = camera
-                    val exposure = camera.cameraInfo.exposureState
-                    exposureMin = exposure.exposureCompensationRange.lower
-                    exposureMax = exposure.exposureCompensationRange.upper
-                    currentExposure = exposure.exposureCompensationIndex
-                    val z = camera.cameraInfo.zoomState.value
-                    zoomMin = z?.minZoomRatio ?: 1f
-                    zoomMax = z?.maxZoomRatio ?: 1f
-                    currentZoom = z?.zoomRatio ?: 1f
                 } catch (e: Exception) {
                     activeCamera = null; photoCapture = null; videoCapture = null
                     Toast.makeText(context, "Kamera nije dostupna: " + e.localizedMessage,
@@ -221,6 +270,14 @@ private fun LensigoApplication() {
                 disposed = true
                 if (future.isDone) try { future.get().unbindAll() } catch (_: Exception) {}
             }
+        }
+    }
+    LaunchedEffect(activeCamera, mode, proValues, proCapabilities) {
+        val camera = activeCamera
+        val caps = proCapabilities
+        if (camera != null && caps != null && mode == CameraMode.PRO) {
+            delay(160)
+            runCatching { ProCameraControl.apply(camera, caps, proValues) }
         }
     }
     LaunchedEffect(previewView, flash, mode, activeCamera) {
@@ -240,6 +297,8 @@ private fun LensigoApplication() {
         mode = next
         brightness = 0f; contrast = 1f; saturation = 1f
         flash = false
+        vendorEffect = false
+        proValues = ProValues()
     }
     fun capturePhoto() {
         if (processing) return
@@ -337,7 +396,13 @@ private fun LensigoApplication() {
                             Icon(if (flash) Icons.Default.FlashOn else Icons.Default.FlashOff,
                                 "Bljeskalica", tint = White)
                         }
-                        Text(if (mode == CameraMode.VIDEO) (if (preferSD) "SD" else "HD") else "AUTO",
+                        Text(when(mode) {
+                            CameraMode.VIDEO -> if (preferSD) "SD" else "HD"
+                            CameraMode.PRO -> "JPEG"
+                            CameraMode.NIGHT -> "NOĆ"
+                            CameraMode.PORTRAIT -> "BOKEH"
+                            else -> "AUTO"
+                        },
                             color = White, fontWeight = FontWeight.SemiBold,
                             modifier = Modifier.clickable {
                                 if (mode == CameraMode.VIDEO && !isRecording) {
@@ -407,12 +472,54 @@ private fun LensigoApplication() {
                             }
                         }
                         if (mode == CameraMode.NIGHT) {
-                            Text("NOĆ · lokalno posvjetljivanje", color = White,
+                            Text(if (vendorEffect) "NOĆ · način proizvođača" else
+                                "NOĆ · lokalno posvjetljivanje", color = White,
                                 fontSize = 12.sp,
                                 modifier = Modifier.align(Alignment.BottomCenter)
                                     .padding(bottom = 78.dp)
                                     .background(Black.copy(alpha = .72f), RoundedCornerShape(12.dp))
                                     .padding(9.dp))
+                        }
+                        if (mode == CameraMode.PRO) {
+                            ProControlOverlay(
+                                capabilities = proCapabilities, values = proValues,
+                                onValues = { proValues = it },
+                                exposure = currentExposure, minExposure = exposureMin,
+                                maxExposure = exposureMax,
+                                onExposure = { ev ->
+                                    activeCamera?.cameraControl?.setExposureCompensationIndex(ev)
+                                    currentExposure = ev
+                                },
+                                modifier = Modifier.align(Alignment.BottomCenter)
+                                    .fillMaxWidth().padding(horizontal = 9.dp, vertical = 1.dp)
+                                    .padding(bottom = 61.dp)
+                            )
+                        }
+                        if (mode == CameraMode.PORTRAIT) {
+                            Row(Modifier.align(Alignment.BottomCenter)
+                                .fillMaxWidth().padding(horizontal = 14.dp)
+                                .padding(bottom = 67.dp)
+                                .background(Navy, RoundedCornerShape(10.dp))
+                                .padding(horizontal = 10.dp, vertical = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically) {
+                                Text(if (vendorEffect) "BOKEH UREĐAJA" else "ZAMUĆENJE",
+                                    color = White, fontSize = 11.sp, fontWeight = FontWeight.Medium)
+                                if (!vendorEffect) {
+                                    Slider(value = portraitBlur, onValueChange = { portraitBlur = it },
+                                        modifier = Modifier.weight(1f).padding(start = 9.dp))
+                                } else {
+                                    Text("Aktivno", color = Cyan, fontSize = 12.sp,
+                                        modifier = Modifier.padding(14.dp))
+                                }
+                            }
+                            if (!vendorEffect) {
+                                Text("Središnji fokus · efekt nakon snimanja", color = White,
+                                    fontSize = 10.sp,
+                                    modifier = Modifier.align(Alignment.BottomCenter)
+                                        .padding(bottom = 121.dp)
+                                        .background(Black.copy(alpha = .70f),
+                                            RoundedCornerShape(5.dp)).padding(4.dp))
+                            }
                         }
                         Row(
                             Modifier.align(Alignment.BottomCenter).padding(bottom = 13.dp)
@@ -437,7 +544,7 @@ private fun LensigoApplication() {
                                 }
                         }
                     }
-                    if (mode == CameraMode.PRO || mode == CameraMode.NIGHT) {
+                    if (mode == CameraMode.NIGHT && !vendorEffect) {
                         val min = exposureMin
                         val max = exposureMax
                         if (max > min) {
@@ -503,13 +610,14 @@ private fun LensigoApplication() {
                         "🎬  Video" to CameraMode.VIDEO,
                         "✨  Filteri" to CameraMode.FILTERS,
                         "🌙  Noćni" to CameraMode.NIGHT,
-                        "⚙️  Pro EV" to CameraMode.PRO
+                        "⚙️  Pro" to CameraMode.PRO,
+                        "👤  Portret" to CameraMode.PORTRAIT
                     )
                     routes.forEach { (name, target) ->
                         Button(onClick = { setMode(target); moveTo(Screen.CAMERA) },
                             modifier = Modifier.fillMaxWidth()) { Text(name) }
                     }
-                    Text("Panorama, dual kamera i portretne maske planirani su za sljedeće faze.",
+                    Text("Panorama i dual kamera planirani su za sljedeće faze. Portret koristi Bokeh uređaja ili označeni lokalni efekt.",
                         color = Muted, fontSize = 13.sp)
                     Button(onClick = { moveTo(Screen.GALLERY) }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.PhotoLibrary, null); Spacer(Modifier.width(8.dp))

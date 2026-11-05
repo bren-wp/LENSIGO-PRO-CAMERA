@@ -82,7 +82,7 @@ object MediaLibrary {
                 if (look.isNeutral) {
                     FileInputStream(file).use { input -> input.copyTo(output) }
                 } else {
-                    val bitmap = FilterEngine.decode(file, if (lowMemory) 2048 else 3072)
+                    val bitmap = FilterEngine.decode(file, if (look.portraitBlur > 0f) 1600 else if (lowMemory) 2048 else 3072)
                     val edited = try { FilterEngine.apply(bitmap, look) } finally { bitmap.recycle() }
                     try {
                         if (!edited.compress(Bitmap.CompressFormat.JPEG, quality, output)) {

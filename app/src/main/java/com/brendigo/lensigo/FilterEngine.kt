@@ -27,11 +27,12 @@ data class PhotoLook(
     val saturation: Float = 1f,
     val lowLight: Boolean = false,
     val softenNoise: Boolean = false,
-    val sharpen: Boolean = false
+    val sharpen: Boolean = false,
+    val portraitBlur: Float = 0f
 ) {
     val isNeutral: Boolean get() = filter == LensFilter.ORIGINAL &&
         brightness == 0f && contrast == 1f && saturation == 1f &&
-        !lowLight && !softenNoise && !sharpen
+        !lowLight && !softenNoise && !sharpen && portraitBlur <= 0f
 }
 
 object FilterEngine {
@@ -160,7 +161,7 @@ object FilterEngine {
         Canvas(result).drawBitmap(input, 0f, 0f, Paint(Paint.ANTI_ALIAS_FLAG).apply {
             colorFilter = colorFilter(look)
         })
-        if (!look.softenNoise && !look.sharpen) return result
+        if (!look.softenNoise && !look.sharpen) return portraitBlur(result, look.portraitBlur)
         val width = result.width
         val height = result.height
         if (width < 3 || height < 3) return result
@@ -213,6 +214,43 @@ object FilterEngine {
             java.lang.System.arraycopy(next, 0, current, 0, width)
         }
         result.recycle()
-        return processed
+        return portraitBlur(processed, look.portraitBlur)
+    }
+
+    /** Artistic center-weighted blur fallback. Not semantic/face segmentation. */
+    private fun portraitBlur(source: Bitmap, strength: Float): Bitmap {
+        val intensity = strength.coerceIn(0f, 1f)
+        if (intensity <= 0f || source.width < 32 || source.height < 32) return source
+        val w = source.width; val h = source.height
+        val reduction = 9 + (intensity * 24).toInt()
+        val tiny = Bitmap.createScaledBitmap(source, (w / reduction).coerceAtLeast(1),
+            (h / reduction).coerceAtLeast(1), true)
+        val blurred = Bitmap.createScaledBitmap(tiny, w, h, true)
+        tiny.recycle()
+        val result = Bitmap.createBitmap(w, h, Bitmap.Config.ARGB_8888)
+        val sharpRow = IntArray(w)
+        val blurRow = IntArray(w)
+        val output = IntArray(w)
+        for (y in 0 until h) {
+            source.getPixels(sharpRow, 0, w, 0, y, w, 1)
+            blurred.getPixels(blurRow, 0, w, 0, y, w, 1)
+            val cy = (y / h.toFloat() - .47f) / .43f
+            for (x in 0 until w) {
+                val cx = (x / w.toFloat() - .50f) / .36f
+                val radius = kotlin.math.sqrt(cx * cx + cy * cy)
+                val factor = ((radius - .75f) / .55f).coerceIn(0f, 1f) * intensity
+                val original = sharpRow[x]; val soft = blurRow[x]
+                val r = (android.graphics.Color.red(original) * (1f-factor) +
+                    android.graphics.Color.red(soft) * factor).toInt().coerceIn(0,255)
+                val g = (android.graphics.Color.green(original) * (1f-factor) +
+                    android.graphics.Color.green(soft) * factor).toInt().coerceIn(0,255)
+                val b = (android.graphics.Color.blue(original) * (1f-factor) +
+                    android.graphics.Color.blue(soft) * factor).toInt().coerceIn(0,255)
+                output[x] = android.graphics.Color.rgb(r,g,b)
+            }
+            result.setPixels(output, 0, w, 0, y, w, 1)
+        }
+        blurred.recycle(); source.recycle()
+        return result
     }
 }
