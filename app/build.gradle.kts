@@ -25,6 +25,7 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
     implementation("androidx.core:core-ktx:1.17.0")
     implementation("androidx.exifinterface:exifinterface:1.4.1")
+    implementation("androidx.annotation:annotation-experimental:1.6.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("androidx.camera:camera-core:1.6.2")
     implementation("androidx.camera:camera-camera2:1.6.2")

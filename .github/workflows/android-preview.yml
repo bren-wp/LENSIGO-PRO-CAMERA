@@ -26,6 +26,11 @@ jobs:
           gradle-version: '9.6.0'
       - name: Build APK and AAB
         run: gradle :app:assembleDebug :app:bundleRelease :app:lintDebug --stacktrace
+      - name: Show complete lint report on failure
+        if: failure()
+        run: |
+          REPORT="app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt"
+          if [ -f "$REPORT" ]; then cat "$REPORT"; fi
       - uses: actions/upload-artifact@v4
         with:
           name: lensigo-android-preview

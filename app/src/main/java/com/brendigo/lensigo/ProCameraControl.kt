@@ -28,7 +28,7 @@ data class ProValues(
 )
 
 object ProCameraControl {
-    @OptIn(ExperimentalCamera2Interop::class)
+    @androidx.annotation.OptIn(ExperimentalCamera2Interop::class)
     fun capabilities(camera: Camera): ProCapabilities {
         return try {
             val info = Camera2CameraInfo.from(camera.cameraInfo)
@@ -67,7 +67,7 @@ object ProCameraControl {
         66_666_667L to "1/15"
     )
 
-    @OptIn(ExperimentalCamera2Interop::class)
+    @androidx.annotation.OptIn(ExperimentalCamera2Interop::class)
     fun apply(camera: Camera, capabilities: ProCapabilities, values: ProValues) {
         val builder = CaptureRequestOptions.Builder()
         if (values.manualExposure && capabilities.manualSensor) {
