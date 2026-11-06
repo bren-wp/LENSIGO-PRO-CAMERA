@@ -10,6 +10,7 @@ import android.os.Bundle
 import android.provider.MediaStore
 import android.net.Uri
 import android.widget.Toast
+import android.media.MediaActionSound
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -86,7 +87,7 @@ private val Blue = Color(0xFF2E83FF)
 private val Muted = Color(0xFF9DB5C4)
 private val White = Color(0xFFF7FCFF)
 
-private enum class Screen { SPLASH, WELCOME, PERMISSIONS, HOME, CAMERA, GALLERY, VIEWER, SETTINGS, PRIVACY, ABOUT }
+private enum class Screen { SPLASH, WELCOME, PERMISSIONS, HOME, CAMERA, GALLERY, VIEWER, SETTINGS, CAMERA_SETTINGS, PRIVACY, ABOUT }
 private enum class CameraMode(val title: String) {
     VIDEO("VIDEO"), PHOTO("FOTO"), PRO("PRO"), NIGHT("NOĆ"),
     PORTRAIT("PORTRET"), PANORAMA("PANORAMA"), DUAL("DUAL"), FILTERS("FILTERI")
@@ -129,6 +130,12 @@ private fun LensigoApplication() {
     var contrast by remember { mutableFloatStateOf(1f) }
     var saturation by remember { mutableFloatStateOf(1f) }
     var flash by remember { mutableStateOf(false) }
+    var gridEnabled by remember { mutableStateOf(prefs.getBoolean("grid", true)) }
+    var timerSeconds by remember { mutableIntStateOf(prefs.getInt("timer", 0)) }
+    var countdown by remember { mutableIntStateOf(0) }
+    var shutterSound by remember { mutableStateOf(prefs.getBoolean("shutter_sound", false)) }
+    val sound = remember { MediaActionSound() }
+    DisposableEffect(Unit) { onDispose { sound.release() } }
     var portraitBlur by remember { mutableFloatStateOf(.60f) }
     var vendorEffect by remember { mutableStateOf(false) }
     var proCapabilities by remember { mutableStateOf<ProCapabilities?>(null) }
@@ -536,6 +543,32 @@ private fun LensigoApplication() {
             Toast.makeText(context, "Video nije dostupan: " + e.localizedMessage, Toast.LENGTH_LONG).show()
         }
     }
+    fun onShutter() {
+        if (countdown > 0 || processing || !hasCameraPermission) return
+        if (mode == CameraMode.VIDEO) {
+            toggleRecording()
+            return
+        }
+        fun take() {
+            if (shutterSound) runCatching {
+                sound.play(MediaActionSound.SHUTTER_CLICK)
+            }
+            when (mode) {
+                CameraMode.PANORAMA -> capturePanorama()
+                CameraMode.DUAL -> captureDual()
+                else -> capturePhoto()
+            }
+        }
+        if (timerSeconds == 0) take()
+        else scope.launch {
+            for (remaining in timerSeconds downTo 1) {
+                countdown = remaining
+                delay(1000)
+            }
+            countdown = 0
+            take()
+        }
+    }
     fun openFromCamera() {
         if (isRecording || processing) return
         clearTemporaryCaptures()
@@ -616,6 +649,17 @@ private fun LensigoApplication() {
                                         FocusMeteringAction.Builder(point).build())
                                 }
                             })
+                            if (gridEnabled) Canvas(Modifier.fillMaxSize()) {
+                                val stroke = 1.dp.toPx()
+                                for (step in 1..2) {
+                                    val x = size.width * step / 3f
+                                    val y = size.height * step / 3f
+                                    drawLine(White.copy(alpha = .42f),
+                                        Offset(x, 0f), Offset(x, size.height), strokeWidth = stroke)
+                                    drawLine(White.copy(alpha = .42f),
+                                        Offset(0f, y), Offset(size.width, y), strokeWidth = stroke)
+                                }
+                            }
                             if (mode != CameraMode.PANORAMA && mode != CameraMode.DUAL) {
                                 FocusCorners(Modifier.align(Alignment.Center).size(78.dp))
                             }
@@ -632,6 +676,10 @@ private fun LensigoApplication() {
                                 modifier = Modifier.clickable { moveTo(Screen.HOME) })
                             Spacer(Modifier.width(12.dp))
                             Text("PRO", color = Cyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                        if (countdown > 0) {
+                            Text(countdown.toString(), color = White, fontSize = 64.sp,
+                                fontWeight = FontWeight.Bold, modifier = Modifier.align(Alignment.Center))
                         }
                         if (mode == CameraMode.PANORAMA) {
                             PanoramaGuide(
@@ -790,13 +838,8 @@ private fun LensigoApplication() {
                         }
                         Box(Modifier.size(78.dp).border(3.dp, White, CircleShape).padding(6.dp)
                             .background(if (mode == CameraMode.VIDEO) Color(0xFFEB3D43) else White, CircleShape)
-                            .clickable(enabled = !processing && hasCameraPermission) {
-                                when (mode) {
-                                    CameraMode.VIDEO -> toggleRecording()
-                                    CameraMode.PANORAMA -> capturePanorama()
-                                    CameraMode.DUAL -> captureDual()
-                                    else -> capturePhoto()
-                                }
+                            .clickable(enabled = !processing && countdown == 0 && hasCameraPermission) {
+                                onShutter()
                             }, contentAlignment = Alignment.Center) {
                             if (isRecording) Box(Modifier.size(26.dp)
                                 .background(White, RoundedCornerShape(6.dp)))
@@ -851,7 +894,8 @@ private fun LensigoApplication() {
                 }
                 Screen.GALLERY -> GalleryScreen(
                     onBack = { moveTo(Screen.CAMERA) },
-                    onOpen = { activeMedia = it; moveTo(Screen.VIEWER) }
+                    onOpen = { activeMedia = it; moveTo(Screen.VIEWER) },
+                    onSettings = { moveTo(Screen.SETTINGS) }
                 )
                 Screen.VIEWER -> {
                     val item = activeMedia
@@ -865,6 +909,33 @@ private fun LensigoApplication() {
                     }
                 }
                 Screen.SETTINGS -> PageScaffold("Postavke", onBack = { moveTo(Screen.CAMERA) }) {
+                    Text("Postavke", color = White, fontWeight = FontWeight.Bold,
+                        fontSize = 30.sp)
+                    Text("Prilagodi LENSIGO svojem načinu snimanja.", color = Muted)
+                    Text("KAMERA", color = Cyan, fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                    TextButton(onClick = { moveTo(Screen.CAMERA_SETTINGS) }) {
+                        Text("Detaljne postavke kamere", color = White)
+                    }
+                    SettingToggle("Mreža kadra", "Pomoć pri kompoziciji",
+                        gridEnabled) { gridEnabled = it; prefs.edit().putBoolean("grid",it).apply() }
+                    Text("Samookidač: " + if (timerSeconds == 0) "Isključeno" else
+                        timerSeconds.toString() + " s", color = White)
+                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
+                        listOf(0,3,5,10).forEach { seconds ->
+                            FilterChip(selected = timerSeconds == seconds,
+                                onClick = {
+                                    timerSeconds = seconds
+                                    prefs.edit().putInt("timer",seconds).apply()
+                                }, label = { Text(if (seconds == 0) "Off" else seconds.toString() + "s") })
+                        }
+                    }
+                    SettingToggle("Zvuk okidača", "Zvuk pri fotografiranju",
+                        shutterSound) {
+                        shutterSound = it
+                        prefs.edit().putBoolean("shutter_sound", it).apply()
+                    }
+                    Text("OBRADA I VIDEO", color = Cyan, fontSize = 13.sp,
+                        fontWeight = FontWeight.Bold)
                     SettingToggle("Štedljiva obrada (2048 px)", "Manje memorije, brži filtri",
                         lowMemory) { lowMemory = it; prefs.edit().putBoolean("low_memory", it).apply() }
                     SettingToggle("Smanjenje šuma", "Blago zaglađivanje jednobojnih površina",
@@ -883,6 +954,23 @@ private fun LensigoApplication() {
                     HorizontalDivider()
                     TextButton(onClick = { moveTo(Screen.PRIVACY) }) { Text("Privatnost i dozvole") }
                     TextButton(onClick = { moveTo(Screen.ABOUT) }) { Text("O aplikaciji") }
+                }
+                Screen.CAMERA_SETTINGS -> PageScaffold("Postavke kamere",
+                    onBack = { moveTo(Screen.SETTINGS) }) {
+                    Text("Fotografije", color = Cyan, fontWeight = FontWeight.Bold)
+                    Text("JPEG kvaliteta " + jpegQuality + "%", color = White)
+                    Slider(value = jpegQuality.toFloat(), valueRange = 70f..100f,
+                        onValueChange = { jpegQuality = it.toInt() },
+                        onValueChangeFinished = {
+                            prefs.edit().putInt("quality", jpegQuality).apply()
+                        })
+                    SettingToggle("Mreža kadra", "Prikazuje pravilo trećina",
+                        gridEnabled) { gridEnabled = it; prefs.edit().putBoolean("grid", it).apply() }
+                    SettingToggle("SD video", "Za slabije kamere i manje datoteke",
+                        preferSD) { preferSD = it; prefs.edit().putBoolean("video_sd",it).apply() }
+                    Text("JPEG fotografije i SD/HD video stvarno su podržani. " +
+                        "HEIF, RAW i 4K/60 nisu ponuđeni jer nisu implementirani.",
+                        color = Muted, fontSize = 13.sp)
                 }
                 Screen.PRIVACY -> PageScaffold("Privatnost", onBack = { moveTo(Screen.SETTINGS) }) {
                     Text("LENSIGO obrađuje fotografije lokalno, bez slanja podataka na poslužitelj.",

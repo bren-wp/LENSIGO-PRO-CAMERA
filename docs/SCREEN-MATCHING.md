@@ -19,11 +19,11 @@ Rekonstrukcija se izrađuje u Jetpack Compose; screenshotovi koncepta nisu stvar
 | 10_panorama.png | Panorama | 2–5 vođenih snimki, indikator pomaka, završetak/odustajanje, lokalno spajanje | Osnovni način bez automatskog poravnanja; 1:1 nije potvrđeno |
 | 11_dual.png | Dual | Istodobni pregled prednje/stražnje kamere uz podršku, sekvencijalni fallback, spajanje fotografija | Osnovni način uz hardverska ograničenja; 1:1 nije potvrđeno |
 | 12_filters.png | Filteri | 12 lokalnih LUT/matrix efekata i intenzitet | Funkcionalno za JPEG; preview podrška Android 12+ |
-| 13_gallery.png | Galerija | Lokalno pretraživanje i prikaz LENSIGO datoteka | Funkcionalno |
-| 14_viewer.png | Preglednik | Fotografije i vanjski video player | Funkcionalno |
-| 15_editor.png | Uređivač | Filter, kontrast, svjetlina, zasićenost, spremanje kopije | Funkcionalno |
-| 16_settings.png | Postavke | Kvaliteta, obrada, šum, SD video, mikrofon | Funkcionalno |
-| 17_camera-settings.png | Kamera postavke | U glavnim postavkama | Djelomično |
+| 13_gallery.png | Galerija | 3 stupca, 4 filtra (Sve/Fotografije/Videozapisi/Favoriti), oznake na snimkama | Implementirano, 1:1 nije potvrđeno |
+| 14_viewer.png | Preglednik | Foto/video, Uredi, Podijeli, Spremi kopiju, Izbriši, favorit | Implementirano, 1:1 nije potvrđeno |
+| 15_editor.png | Uređivač | Svjetlina, kontrast, obrezivanje središta, 12 filtera, rotacija, spremanje | Implementirano, 1:1 nije potvrđeno |
+| 16_settings.png | Postavke | JPEG, lokalna obrada, SD video, mreža, timer i opcionalni zvuk | Implementirano, 1:1 nije potvrđeno |
+| 17_camera-settings.png | Kamera postavke | Zaseban ekran JPEG, mreža i video kvaliteta | Implementirano djelomično, 1:1 nije potvrđeno |
 | 18_privacy.png | Privatnost | Lokalni opis dozvola | Funkcionalno |
 | 19_about.png | O aplikaciji | Brending i verzija | Funkcionalno |
 
@@ -62,3 +62,15 @@ Iz `izvoz/mobitel/07_pro.png`, `08_night.png` i `09_portrait.png`:
 - Reference 01–03: namjenski Splash, dobrodošlica i ekrani dozvola. SVG/vector simbol približna je vektorska rekonstrukcija, nije dokazano pixel 1:1 s dostavljenim PNG-om.
 - **Nije odrađeno:** snimanje stvarnih screenshotova na Android emulatoru/fizičkom uređaju, diffs/threshold s PNG referencama, simultana ekspozicija oba senzora, perspektivna registracija panorame.
 - Responzivnost: klizači i gumbi koriste Compose dp te prilagodljivu veličinu pregleda kamere, ali rasporedi trebaju testove na malim mobitelima, tabletima i velikom fontu.
+
+## Galerija, preglednik, editor i postavke 0.5.0
+
+Referentne slikovne datoteke `13_gallery.png` do `17_camera-settings.png` imaju:
+- gornju tamnoplavu traku sa strelicom i centriranim naslovom
+- podebljane naslovne blokove s plavim naglascima
+- galeriju s tri stupca i četiri vrste sadržaja
+- preglednik s donjom trakom od četiri akcije
+- editor s velikom fotografijom, pet alata, jednim klizačem i gumbom za spremanje
+- postavke s vizualnim grupama; implementirane su samo stavke koje zaista mijenjaju ponašanje kamere
+
+U ovom izdanju postoji odgovarajuća navigacija i funkcionalni alati, ali **još nema potvrde 1:1**. Stvarna kamera i galerija s korisničkim slikama ne mogu se automatski smatrati istom statičnom scenom kao referentni mockup. Potrebne su realne snimke Android emulatora/uređaja za usporedbu koordinata, fontova, paddinga i boja.
