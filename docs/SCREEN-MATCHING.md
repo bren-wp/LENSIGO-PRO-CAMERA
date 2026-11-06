@@ -150,3 +150,9 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - The original `izvoz/mobitel/08_night.png` and tablet counterpart show the live image without an extra persistent footer label, and a standard zoom control just above the selected mode. The hardcoded footer text has been removed to restore usable preview height.
 - The existing real exposure compensation slider remains available on devices supporting EV, but is **collapsed by default** and toggled by tapping the accessible NOĆ header. When the OEM Night extension is active or EV unsupported, no non-functional slider is presented. The actual vendor-extension/local-processing decision remains unchanged.
 - Camera sensor content changes on each device; no claim is made that a live preview matches the static reference photograph. Device screenshots and extension fallback tests remain pending.
+
+## 09 Portrait — honest fallback and visual focus guide
+
+- The user reference `izvoz/mobitel/09_portrait.png` includes a large face-area focus frame and a cyan blur slider. Native Portrait mode uses a 210dp focus guide, still responds to actual tap-to-focus and clamps inside the real CameraX preview.
+- When CameraX Bokeh extension is available, top header reads BOKEH; when it is not, top header reads PORTRET and the local oval-mask blur slider remains functional. No imaginary device-level background segmentation is claimed, and the extra developer-like footer note has been removed from the view.
+- Native screenshot comparison against the 1080×2400 phone and 1600×2560 tablet reference is not yet recorded. Face-specific tracking is not implemented; the rectangle is a visible focus guide, not a face detector.

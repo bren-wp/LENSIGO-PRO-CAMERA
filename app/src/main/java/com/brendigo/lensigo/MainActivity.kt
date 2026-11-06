@@ -752,7 +752,7 @@ private fun LensigoApplication() {
                             CameraMode.VIDEO -> if (preferSD) "SD" else "HD"
                             CameraMode.PRO -> "JPEG"
                             CameraMode.NIGHT -> "NOĆ"
-                            CameraMode.PORTRAIT -> "BOKEH"
+                            CameraMode.PORTRAIT -> if (vendorEffect) "BOKEH" else "PORTRET"
                             else -> "AUTO"
                         },
                             color = White, fontWeight = FontWeight.SemiBold,
@@ -817,7 +817,8 @@ private fun LensigoApplication() {
                                 }
                             }
                             if (mode != CameraMode.PANORAMA && mode != CameraMode.DUAL) {
-                                FocusCorners(Modifier.fillMaxSize(), focusPoint)
+                                FocusCorners(Modifier.fillMaxSize(), focusPoint,
+                                    if (mode == CameraMode.PORTRAIT) 210.dp else 78.dp)
                             }
                         } else {
                             Column(Modifier.align(Alignment.Center).padding(20.dp),
@@ -921,14 +922,7 @@ private fun LensigoApplication() {
                                         modifier = Modifier.padding(14.dp))
                                 }
                             }
-                            if (!vendorEffect) {
-                                Text("Središnji fokus · efekt nakon snimanja", color = White,
-                                    fontSize = 10.sp,
-                                    modifier = Modifier.align(Alignment.BottomCenter)
-                                        .padding(bottom = 121.dp)
-                                        .background(Black.copy(alpha = .70f),
-                                            RoundedCornerShape(5.dp)).padding(4.dp))
-                            }
+
                         }
                         Row(
                             Modifier.align(Alignment.BottomCenter).padding(bottom = 13.dp)
@@ -1181,9 +1175,10 @@ private fun LensigoApplication() {
 }
 
 @Composable
-private fun FocusCorners(modifier: Modifier = Modifier, touch: Offset? = null) {
+private fun FocusCorners(modifier: Modifier = Modifier, touch: Offset? = null,
+                         diameter: androidx.compose.ui.unit.Dp = 78.dp) {
     Canvas(modifier) {
-        val frame = 78.dp.toPx().coerceAtMost(size.minDimension)
+        val frame = diameter.toPx().coerceAtMost(size.minDimension)
         val half = frame / 2f
         val cx = (touch?.x ?: size.width / 2f).coerceIn(half, size.width - half)
         val cy = (touch?.y ?: size.height / 2f).coerceIn(half, size.height - half)
