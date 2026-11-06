@@ -33,3 +33,19 @@ python tools/pixel_audit_batch.py --reference reference/tablet --actual screensh
 Skripta generira `summary.json`, pojedinačne razlike i **pada** ako bilo koji od 19 screenshotova nedostaje ili nije identičan. To su stroge mjere za fiksne statične scene; za live kameru potrebno je maskirati promjenjivu sliku senzora i sustavne trake. Bez 38 stvarnih Android screenshotova rezultat ostaje **neprovjeren**, a ne 1:1.
 
 Launch PNG se reproducira identično referentnom RGB sadržaju; to nije isto što i konačni prikaz ikone unutar svih maski proizvođačkih launchera.
+
+## Mjerljiv UI-audit kamera uz lokalno maskiranje pokretne scene
+
+Kamera prikazuje sadržaj senzora koji se mijenja čak i kad je položaj UI gumba isti. Alat `pixel_audit.py` sada dopušta **izričito zadane pravokutnike** koje je korisnik vizualno provjerio kao područja bez HUD-a. Sve izvan pravokutnika provjerava se izvornom RGB metodom. Alat odbija pravokutnike izvan ekrana i potpuno maskiran ekran.
+
+```bash
+python tools/pixel_audit.py \
+  --reference reference/mobitel/05_photo.png \
+  --actual screenshots/mobitel/05_photo.png \
+  --output audit/mobitel/05_photo_ui \
+  --ignore-rect 10 400 300 1300
+```
+
+Po potrebi se `--ignore-rect` ponavlja za više odvojenih područja. **Ne maskirati fokusni okvir, korisničke kontrole, navigaciju, preklapanja, tekstove ili mjesta gdje se sumnja na pogrešku.** U izvještaju se odvojeno bilježe `strictly_identical` (čitav ekran), `compared_regions_identical` (samo nemaskirani pikseli), broj uspoređenih i zanemarenih piksela. Maskirano područje ostaje *neprovjereno*, a podudaranje nemaskiranih piksela nije dokaz da je čitav ekran 1:1.
+
+Za Gallery, Viewer, Editor, Settings, Privacy i About preferirati audit **bez maski** i identične medijske datoteke u referenci/aplikaciji. Batch provjera svih 19 zaslona i dalje provodi strogi test potpunog zaslona. Nijedna snimka Android aplikacije nije izmišljena niti korištena kao zamjena za stvarni emulator.
