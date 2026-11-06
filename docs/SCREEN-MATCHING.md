@@ -156,3 +156,9 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - The user reference `izvoz/mobitel/09_portrait.png` includes a large face-area focus frame and a cyan blur slider. Native Portrait mode uses a 210dp focus guide, still responds to actual tap-to-focus and clamps inside the real CameraX preview.
 - When CameraX Bokeh extension is available, top header reads BOKEH; when it is not, top header reads PORTRET and the local oval-mask blur slider remains functional. No imaginary device-level background segmentation is claimed, and the extra developer-like footer note has been removed from the view.
 - Native screenshot comparison against the 1080×2400 phone and 1600×2560 tablet reference is not yet recorded. Face-specific tracking is not implemented; the rectangle is a visible focus guide, not a face detector.
+
+## 10 Panorama / 11 Dual — framing and hardware capability
+
+- Source `izvoz/mobitel/10_panorama.png`: white translucent central guidance rectangle with the rightward movement instruction, a wide horizontal indicator and a large white arrow. The guidance now follows these elements; the line fill reflects `frameCount / MAX_FRAMES`, not an invented 100% sample progress. Existing Finish/Cancel and 2–5 frame logic remain functional.
+- Source `izvoz/mobitel/11_dual.png`: front-view PiP in the upper-right of the main camera image. CameraX's actual concurrent view remains visible only when hardware supports it. Removed redundant footer text during concurrent operation; numbered guidance remains visible for the honest sequential fallback.
+- Not verified: panorama perspective alignment, simultaneous still exposure across dual sensors, OEM CameraX camera behavior, or exact 1:1 Android screenshots. Both modes retain existing documented limitations.
