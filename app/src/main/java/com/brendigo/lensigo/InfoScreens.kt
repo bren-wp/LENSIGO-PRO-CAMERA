@@ -20,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
@@ -59,7 +60,9 @@ private fun InfoLine(icon: ImageVector, title: String, caption: String,
                      detail: String? = null, onClick: (() -> Unit)? = null) {
     Row(
         Modifier.fillMaxWidth().then(
-            if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
+            if (onClick != null) Modifier.clickable(
+                role = Role.Button, onClickLabel = "Otvori $title", onClick = onClick
+            ) else Modifier
         ).heightIn(min = 54.dp).padding(horizontal = 13.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {

@@ -215,3 +215,15 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - **05 Photo / 08 Night / 09 Portrait / 12 Filters / 15 Editor:** JPEG dekodiranje neće se potpuno prekinuti samo zbog nečitljivog EXIF bloka; u tom se slučaju zadržava izvorna orijentacija umjesto pretpostavljanja nepostojeće rotacije.
 - **Lokalni filtri i obrada šuma:** uklonjeno je stvaranje zasebnog `IntArray` objekta za svaki obrađeni redak. Sada se koristi jedan izlazni tampon koji se ponovno upotrebljava. Matematička formula piksela ostaje neizmijenjena.
 - **Provjere koje nedostaju:** stvarni memorijski profil na API 24–36 i usporedba izlaznih JPEG piksela na fizičkom uređaju. Nije dokazano da su svi prikazi vizualno 1:1.
+
+## Prioritetni UI/UX pregled 13–19 uz izvorne mobilne/tabletne reference
+
+Izvori: izvorni paket `LENSIGO_Branding_Android_UI_19_ekrana(1).zip` (`izvoz/mobitel/13_gallery.png` do `19_about.png`; mobitel 1080×2400, tablet 1600×2560). Uspoređivani su elementi reference sa stvarnim Compose deklaracijama; ovo nije zamjena za usporedbu screenshotova builda.
+
+- **13 Galerija:** reference imaju tamnoplavu naslovnu traku, naslov „Moji trenutci”, četiri kartice filtara i mrežu od tri stupca. Zadržani su ti elementi; za povećani font omogućen je pomični red filtara. Pogreška čitanja lokalnih medija sada prikazuje izričitu pogrešku i funkcionalni gumb „Pokušaj ponovno”; medijske kartice imaju jasno opisanu akciju otvaranja.
+- **14 Viewer:** referenca prikazuje donje `0.6 / 1x / 2x / 5x` gumbe iznad četiri medijske radnje. Prikaz fotografije sada ima **stvarno lokalno zumiranje** odgovarajućim gumbima i dvoprstnom gestom, bez promjene izvornika. Video i uređivanje ne prikazuju lažna foto-zoom stanja. Oštećena slika više ne prikazuje beskonačni indikator bez rezultata.
+- **15 Editor:** ekran ima pet alata, pregled fotografije i stvarno spremanje zasebne kopije; Android Back sada prvo zatvara uređivanje umjesto da neočekivano napusti Viewer. Spremanje se ne nudi ako fotografija nije uspješno učitana.
+- **16–17 Settings:** cijeli red s prekidačem ima jednu semantičku akciju (nema ugniježđenih prekidača koji mogu izazvati dvostruko prebacivanje). Gumb zupčanika unutar „Postavke kamere” vraća na Postavke, umjesto da neočekivano otvara „O aplikaciji”. Odrezivanje predugih vrijednosti ograničeno je na dva retka.
+- **18 Privacy i 19 About:** izvorna grupiranja, boje i raspored zadržani su; interaktivni informacijski retci dobili su eksplicitnu oznaku za čitač zaslona.
+- **Preostalo:** fotografirati svih 7 zaslona na uređaju uz identične insets, fontScale i gustoću piksela te provesti stvarni pixel-diff s referentnim PNG-ovima prije bilo kakve tvrdnje o 1:1.
+

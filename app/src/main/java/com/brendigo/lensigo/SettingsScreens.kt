@@ -2,6 +2,7 @@ package com.brendigo.lensigo
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -14,6 +15,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -66,10 +69,15 @@ private fun SettingsItem(
     val active = onClick != null || onToggle != null
     Row(
         Modifier.fillMaxWidth().heightIn(min = 71.dp)
-            .then(if (active) Modifier.clickable {
-                if (checked != null && onToggle != null) onToggle(!checked)
-                else onClick?.invoke()
-            } else Modifier)
+            .then(when {
+                checked != null && onToggle != null ->
+                    Modifier.toggleable(value = checked, role = Role.Switch,
+                        onValueChange = onToggle)
+                onClick != null ->
+                    Modifier.clickable(role = Role.Button,
+                        onClickLabel = label, onClick = onClick)
+                else -> Modifier
+            })
             .padding(horizontal = 7.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
@@ -84,11 +92,12 @@ private fun SettingsItem(
         }
         Spacer(Modifier.width(8.dp))
         if (checked != null && onToggle != null) {
-            Switch(checked = checked, onCheckedChange = onToggle,
+            Switch(checked = checked, onCheckedChange = null,
                 modifier = Modifier.heightIn(min = 40.dp),
                 colors = SwitchDefaults.colors(checkedTrackColor = Color(0xFF0A99C1)))
         } else if (value != null) {
-            Text(value, color = Muted, fontSize = 11.sp, textAlign = TextAlign.End)
+            Text(value, color = Muted, fontSize = 11.sp, textAlign = TextAlign.End,
+                maxLines = 2, overflow = TextOverflow.Ellipsis)
         } else if (onClick != null) {
             Icon(Icons.Default.ChevronRight, null, tint = Muted,
                 modifier = Modifier.size(17.dp))
@@ -205,11 +214,10 @@ internal fun LensigoCameraSettingsScreen(
     onSharpen: (Boolean) -> Unit,
     onLowMemory: (Boolean) -> Unit,
     onMicrophone: () -> Unit,
-    onBack: () -> Unit,
-    onAbout: () -> Unit
+    onBack: () -> Unit
 ) {
     Column(Modifier.fillMaxSize().background(Midnight)) {
-        SettingsHeader("Postavke kamere", onBack, onAbout)
+        SettingsHeader("Postavke kamere", onBack, onBack)
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
             .padding(horizontal = 17.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Column(Modifier.widthIn(max = 600.dp)) {

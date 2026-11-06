@@ -1200,8 +1200,7 @@ private fun LensigoApplication() {
                             }
                         }
                     },
-                    onBack = { moveTo(Screen.SETTINGS) },
-                    onAbout = { moveTo(Screen.ABOUT) }
+                    onBack = { moveTo(Screen.SETTINGS) }
                 )
                 Screen.PRIVACY -> LensigoPrivacyScreen(
                     onBack = { moveTo(privacyReturnScreen) },

@@ -9,11 +9,13 @@ import android.net.Uri
 import android.widget.ImageView
 import android.widget.Toast
 import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.compose.BackHandler
 import androidx.activity.result.IntentSenderRequest
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTransformGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -44,9 +46,13 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.draw.clipToBounds
+import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -67,11 +73,20 @@ fun GalleryScreen(onBack: () -> Unit, onOpen: (LensMedia) -> Unit,
     val context = LocalContext.current
     var media by remember { mutableStateOf<List<LensMedia>>(emptyList()) }
     var loading by remember { mutableStateOf(true) }
+    var loadFailed by remember { mutableStateOf(false) }
+    var loadAttempt by remember { mutableIntStateOf(0) }
     var tab by remember { mutableIntStateOf(0) }
     val tabs = listOf("Sve", "Fotografije", "Videozapisi", "Favoriti")
-    LaunchedEffect(Unit) {
-        media = withContext(Dispatchers.IO) { MediaLibrary.list(context) }
-        loading = false
+    LaunchedEffect(loadAttempt) {
+        loading = true
+        loadFailed = false
+        try {
+            media = withContext(Dispatchers.IO) { MediaLibrary.list(context) }
+        } catch (_: Exception) {
+            loadFailed = true
+        } finally {
+            loading = false
+        }
     }
     val selected = media.filter { item ->
         when(tab) {
@@ -100,7 +115,7 @@ fun GalleryScreen(onBack: () -> Unit, onOpen: (LensMedia) -> Unit,
                 color = GalleryMuted, fontSize = 14.sp)
             Spacer(Modifier.height(20.dp))
             BoxWithConstraints(Modifier.fillMaxWidth()) {
-                if (maxWidth < 340.dp) {
+                if (maxWidth < 340.dp || (maxWidth < 550.dp && LocalDensity.current.fontScale >= 1.3f)) {
                     LazyRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
                         items(tabs.size) { index ->
                             GalleryFilterTab(
@@ -128,6 +143,15 @@ fun GalleryScreen(onBack: () -> Unit, onOpen: (LensMedia) -> Unit,
             loading -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = GalleryCyan)
             }
+            loadFailed -> Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Text("Galeriju nije moguće učitati", color = GalleryMuted, fontSize = 14.sp)
+                    OutlinedButton(onClick = { loadAttempt++ }) {
+                        Text("Pokušaj ponovno")
+                    }
+                }
+            }
             selected.isEmpty() -> Box(Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center) {
                 Text(if (tab == 3) "Nema favorita" else "Nema spremljenih LENSIGO snimki",
@@ -148,7 +172,10 @@ fun GalleryScreen(onBack: () -> Unit, onOpen: (LensMedia) -> Unit,
                     }
                     Box(Modifier.aspectRatio(.72f)
                         .background(Color(0xFF153247), RoundedCornerShape(9.dp))
-                        .clickable { onOpen(item) }) {
+                        .clickable(
+                            role = Role.Button,
+                            onClickLabel = if (item.isVideo) "Otvori videozapis" else "Otvori fotografiju"
+                        ) { onOpen(item) }) {
                         if (image != null) Image(image!!.asImageBitmap(), null,
                             modifier = Modifier.fillMaxSize(), contentScale = ContentScale.Crop)
                         if (item.isVideo) Icon(Icons.Default.PlayArrow, "Video",
@@ -202,6 +229,8 @@ fun ViewerScreen(
     var editing by remember(item.uri) { mutableStateOf(false) }
     var tool by remember { mutableIntStateOf(0) }
     var bitmap by remember(item.uri) { mutableStateOf<Bitmap?>(null) }
+    var imageLoading by remember(item.uri) { mutableStateOf(true) }
+    var viewerScale by remember(item.uri) { mutableFloatStateOf(1f) }
     var busy by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var actionsMenu by remember(item.uri) { mutableStateOf(false) }
@@ -248,9 +277,22 @@ fun ViewerScreen(
     }
 
     LaunchedEffect(item.uri) {
-        bitmap = withContext(Dispatchers.IO) {
-            MediaLibrary.thumbnail(context, item, 1600)
+        imageLoading = true
+        try {
+            bitmap = withContext(Dispatchers.IO) {
+                MediaLibrary.thumbnail(context, item, 1600)
+            }
+        } finally {
+            imageLoading = false
         }
+    }
+    // The system Back gesture closes the editor before leaving the Viewer.
+    // While saving, consume Back so an in-flight export is not abandoned.
+    BackHandler(enabled = editing) {
+        if (!busy) editing = false
+    }
+    LaunchedEffect(editing) {
+        if (editing) viewerScale = 1f
     }
     val deleteLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
@@ -365,20 +407,63 @@ fun ViewerScreen(
                 fontSize = 27.sp, color = GalleryText)
             Text("Prilagodi svaki detalj kadra.", color = GalleryMuted, fontSize = 14.sp)
         }
-        Box(Modifier.weight(1f).fillMaxWidth()
-            .padding(horizontal = if (editing) 18.dp else 0.dp),
+        Box(Modifier.weight(1f).fillMaxWidth().clipToBounds()
+            .padding(horizontal = if (editing) 18.dp else 0.dp)
+            .then(if (!editing && !item.isVideo) Modifier.pointerInput(item.uri) {
+                detectTransformGestures { _, _, zoom, _ ->
+                    viewerScale = (viewerScale * zoom).coerceIn(.6f, 5f)
+                }
+            } else Modifier),
             contentAlignment = Alignment.Center) {
             val img = if (editing) editedPreview ?: bitmap else bitmap
             if (img != null) AndroidView(
                 factory = { ctx -> ImageView(ctx).apply {
                     scaleType = ImageView.ScaleType.FIT_CENTER
                 } },
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier.fillMaxSize().graphicsLayer {
+                    val scale = if (!editing && !item.isVideo) viewerScale else 1f
+                    scaleX = scale
+                    scaleY = scale
+                },
                 update = {
                     it.setImageBitmap(img)
                     it.colorFilter = null
                 }
-            ) else CircularProgressIndicator(color = GalleryCyan)
+            ) else if (imageLoading) {
+                CircularProgressIndicator(color = GalleryCyan)
+            } else if (!item.isVideo) {
+                Text("Pregled fotografije nije dostupan",
+                    color = GalleryMuted, fontSize = 14.sp)
+            }
+            if (!editing && !item.isVideo && img != null) {
+                Row(
+                    Modifier.align(Alignment.BottomCenter).padding(bottom = 20.dp)
+                        .background(GalleryInk.copy(alpha = .85f), RoundedCornerShape(32.dp))
+                        .padding(horizontal = 8.dp, vertical = 5.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    listOf(.6f to "0.6", 1f to "1x", 2f to "2x", 5f to "5x")
+                        .forEach { (zoom, label) ->
+                            val selected = kotlin.math.abs(viewerScale - zoom) < .12f
+                            Box(
+                                Modifier.size(width = 46.dp, height = 34.dp)
+                                    .background(
+                                        if (selected) GalleryCyan else Color.Transparent,
+                                        RoundedCornerShape(22.dp)
+                                    )
+                                    .clickable(
+                                        role = Role.Button,
+                                        onClickLabel = "Prikaži fotografiju na $label"
+                                    ) { viewerScale = zoom },
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(label, color = if (selected) GalleryInk else GalleryText,
+                                    fontSize = 13.sp, fontWeight = FontWeight.Bold)
+                            }
+                        }
+                }
+            }
             if (item.isVideo) {
                 Button(onClick = {
                     try { context.startActivity(Intent(Intent.ACTION_VIEW).apply {
@@ -462,7 +547,7 @@ fun ViewerScreen(
                                 Toast.LENGTH_LONG).show()
                         } finally { busy = false }
                     }
-                }, enabled = !busy,
+                }, enabled = !busy && bitmap != null,
                 modifier = Modifier.fillMaxWidth().padding(horizontal = 18.dp)
                     .padding(bottom = 16.dp).height(50.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0D83AB)),
@@ -472,7 +557,7 @@ fun ViewerScreen(
             Row(Modifier.fillMaxWidth().height(124.dp),
                 horizontalArrangement = Arrangement.SpaceEvenly,
                 verticalAlignment = Alignment.CenterVertically) {
-                BottomAction("Uredi", Icons.Default.Edit, !item.isVideo) { editing = true }
+                BottomAction("Uredi", Icons.Default.Edit, !item.isVideo && bitmap != null) { editing = true }
                 BottomAction("Podijeli", Icons.Default.Share) { share() }
                 BottomAction("Spremi", Icons.Default.FileDownload, !busy) {
                     busy = true
