@@ -132,3 +132,9 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - Welcome/Permissions now show functional back and system settings actions: first-screen back exits, the Permissions back returns to Welcome, and settings opens Android's real app settings rather than an inaccessible or mock dialog.
 - The Permissions layout now follows the reference's camera/microphone/media/location sequence. Location is explicitly **not collected or written to EXIF**, rather than promising a permission-dependent feature that the Android app has not implemented. Android 10+ still does not request legacy storage permission.
 - **Still unverified:** real screenshots / pixel-diff, large font layout and Android 7–9 permission round-trip. This is reference-driven implementation, not confirmed 1:1.
+
+## 06 Video Camera — recording overlay and ratio
+
+- CameraX `VideoRecordEvent.Status.recordingStats.recordedDurationNanos` now drives the visible red recording timer, which shows hours/minutes/seconds. It appears only during actual recording, never as a static fake 00:00:12 label from the source screenshot.
+- First video session starts in 16:9 as reference 06, while still-photo modes start in 4:3. The user can change each ratio independently and both preferences persist locally.
+- Source `izvoz/mobitel/06_video.png` and tablet equivalent. The mockup's 4K/60 label is not displayed because only SD/HD capture has been implemented/tested. Device-specific resolution, lens switching while idle, microphone and preview geometry require real physical tests.

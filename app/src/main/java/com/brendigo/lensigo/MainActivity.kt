@@ -145,7 +145,7 @@ private fun LensigoApplication() {
     var pipOnLeft by remember { mutableStateOf(false) }
     val modeListState = rememberLazyListState()
     LaunchedEffect(mode) { modeListState.animateScrollToItem((CameraMode.entries.indexOf(mode) - 2).coerceAtLeast(0)) }
-    var aspectWide by remember { mutableStateOf(false) }
+    var aspectWide by remember { mutableStateOf(prefs.getBoolean("photo_aspect_wide", false)) }
     var preferSD by remember { mutableStateOf(prefs.getBoolean("video_sd", true)) }
     var lowMemory by remember { mutableStateOf(prefs.getBoolean("low_memory", true)) }
     var softenNoise by remember { mutableStateOf(prefs.getBoolean("noise", false)) }
@@ -237,6 +237,7 @@ private fun LensigoApplication() {
     var videoCapture by remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
     var recording by remember { mutableStateOf<Recording?>(null) }
     var isRecording by remember { mutableStateOf(false) }
+    var recordingDurationNanos by remember { mutableLongStateOf(0L) }
     var processing by remember { mutableStateOf(false) }
     var currentExposure by remember { mutableIntStateOf(0) }
     var exposureMin by remember { mutableIntStateOf(0) }
@@ -451,6 +452,12 @@ private fun LensigoApplication() {
             countdown = 0
             clearTemporaryCaptures()
         }
+        if (mode != next) {
+            // Remember a separate aspect ratio for video and still photos.
+            aspectWide = if (next == CameraMode.VIDEO)
+                prefs.getBoolean("video_aspect_wide", true)
+                else prefs.getBoolean("photo_aspect_wide", false)
+        }
         mode = next
         brightness = 0f; contrast = 1f; saturation = 1f
         flash = false
@@ -606,7 +613,11 @@ private fun LensigoApplication() {
             ).setContentValues(values).build()
             val pending = capture.output.prepareRecording(context, options)
             val configured = if (hasMicPermission) pending.withAudioEnabled() else pending
+            recordingDurationNanos = 0L
             recording = configured.start(ContextCompat.getMainExecutor(context)) { event ->
+                if (event is VideoRecordEvent.Status) {
+                    recordingDurationNanos = event.recordingStats.recordedDurationNanos
+                }
                 if (event is VideoRecordEvent.Finalize) {
                     isRecording = false
                     recording = null
@@ -751,7 +762,15 @@ private fun LensigoApplication() {
                             })
                         Text(if (aspectWide) "16:9" else "4:3",
                             color = White, fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.clickable { if (!isRecording) aspectWide = !aspectWide })
+                            modifier = Modifier.clickable {
+                                if (!isRecording) {
+                                    aspectWide = !aspectWide
+                                    prefs.edit().putBoolean(
+                                        if (mode == CameraMode.VIDEO) "video_aspect_wide"
+                                        else "photo_aspect_wide", aspectWide
+                                    ).apply()
+                                }
+                            })
                         IconButton(onClick = { moveTo(Screen.SETTINGS) }) {
                             Icon(Icons.Default.Settings, "Postavke", tint = White)
                         }
@@ -799,6 +818,17 @@ private fun LensigoApplication() {
                                 modifier = Modifier.clickable { moveTo(Screen.HOME) })
                             Spacer(Modifier.width(12.dp))
                             Text("PRO", color = Cyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                        if (mode == CameraMode.VIDEO && isRecording) {
+                            val seconds = (recordingDurationNanos / 1_000_000_000L).coerceAtLeast(0L)
+                            val elapsed = String.format(Locale.ROOT, "%02d:%02d:%02d",
+                                seconds / 3600, (seconds / 60) % 60, seconds % 60)
+                            Text("●  $elapsed", color = White,
+                                fontSize = 13.sp, fontWeight = FontWeight.Bold,
+                                modifier = Modifier.align(Alignment.TopCenter)
+                                    .padding(top = 17.dp)
+                                    .background(Color(0xFFD72E44), RoundedCornerShape(22.dp))
+                                    .padding(horizontal = 17.dp, vertical = 8.dp))
                         }
                         if (countdown > 0) {
                             Text(countdown.toString(), color = White, fontSize = 64.sp,
