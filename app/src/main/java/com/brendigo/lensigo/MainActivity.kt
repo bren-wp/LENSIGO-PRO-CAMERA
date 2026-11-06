@@ -817,8 +817,11 @@ private fun LensigoApplication() {
                     onBack = { screen = Screen.WELCOME },
                     onSettings = ::openAppSystemSettings,
                     onContinue = {
+                        // Match the onboarding reference action: open the real
+                        // camera immediately. HOME remains available from the
+                        // LENSIGO camera header and via system Back.
                         prefs.edit().putBoolean("onboarded", true).apply()
-                        screen = Screen.HOME
+                        screen = Screen.CAMERA
                     }
                 )
                 Screen.CAMERA -> Column(Modifier.fillMaxSize()) {

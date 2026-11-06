@@ -269,17 +269,17 @@ fun LensigoPermissions(
                 Icon(Icons.Default.Shield, contentDescription = null, tint = Accent)
                 Spacer(Modifier.width(12.dp))
                 Column {
-                    Text("Lokacija", color = White, fontWeight = FontWeight.Bold)
+                    Text("Lokacija (neobvezno)", color = White, fontWeight = FontWeight.Bold)
                     Text("Ne prikuplja se niti dodaje fotografijama.",
                         color = Muted, fontSize = 11.sp)
                 }
             }
             Spacer(if (compact) Modifier.height(8.dp) else Modifier.weight(1f))
-            Text("Bez računa, oglasa i internetske dozvole.", color = Muted, fontSize = 12.sp)
-            Button(onClick = onContinue, modifier = Modifier.fillMaxWidth().height(56.dp),
+            Button(onClick = onContinue,
+                modifier = Modifier.fillMaxWidth().heightIn(min = 56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0984AD))) {
-                Text("Nastavi", fontWeight = FontWeight.Bold)
+                Text("Nastavi na kameru", fontWeight = FontWeight.Bold)
             }
         }
     }

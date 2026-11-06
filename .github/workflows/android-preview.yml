@@ -70,7 +70,7 @@ jobs:
               if gh release upload "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --clobber; then
                 exit 0
               fi
-            elif gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO $TAG: Measured real user 01 Splash / 04 Home reference PNGs for phone and tablet. Home cards now target source dimensions 76dp phone / 131dp tablet, hero 146dp / 218dp and correct top-to-bottom banner text placement; spacing, gallery sizing and icon sizes corrected. Splash source logo already starts at 24.6% height and its original 24.5% placement remains. New JUnit layout tests included. Source-driven improvement, not verified 1:1 on real Android screenshots. Preview APK test-signed; AAB unsigned."; then
+            elif gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO $TAG: Onboarding screen 03 now matches the source button text and action: Nastavi na kameru opens the actual Camera screen. Removed non-reference footer text, fixed optional location label without claiming EXIF geolocation, and kept accessible button height. Home remains reachable from Camera title / Android Back. Prior v0.7.47 corrected phone/tablet Home 04 tile and banner geometry with JUnit tests; all earlier capture/galley actions preserved. Not yet verified pixel-exact on emulator/device. APK debug-signed; AAB unsigned."; then
               exit 0
             fi
             if [ "$attempt" -eq 4 ]; then

@@ -254,3 +254,11 @@ Uvedena je zajednička izvorno izmjerena `LensigoReferenceBackground` gradijentn
 - **Galerija:** referentni mobilni gumb sada ima 40dp min, tabletni 57dp; akcija je stvarna, ne demonstracijska.
 - Pri većem fontu pravila povećavaju dimenzije, čuvaju skrolanje i čitljivost, i zato namjerno ne repliciraju statični PNG.
 - **Nema potvrde 1:1 bez realnih Android screenshots i pixel-diff testa**. Kadriranje lokalne WebP naslovne fotografije na visokodenzitetnim ekranima još treba zasebno verificirati.
+
+## 02–03 — potvrda poruka i prelaska u kameru nakon v0.7.47
+
+- Izvorne slike `izvoz/mobitel/02_onboarding.png` i `03_permissions.png` dodatno su uspoređene s Compose kodom. U referenci zaslona 03 donji gumb glasi **„Nastavi na kameru”**. Prije je pisalo samo „Nastavi” i gumb je otvarao Home; sada oznaka i stvarno odredište odgovaraju referenci: Camera.
+- Četvrti red u referenci nazvan je **„Lokacija (neobvezno)”**. Zadržana je istinita napomena da aplikacija ne prikuplja lokaciju niti je zapisuje u fotografije; nije dodana lažna geolokacijska mogućnost.
+- Uklonjen je dodatni uvodni slogan iznad gumba koji ne postoji na referentnoj slici, a visina gumba je minimalna umjesto fiksne za bolju prilagodbu fontu.
+- Početni zaslon Home ostaje dostupan pritiskom na naslov LENSIGO u kameri ili Android Back gestom.
+- Ovo je semantička i izvorno-vizualna korekcija. Stvarni screenshotovi pokrenute aplikacije za 1:1 još nisu uspoređeni.
