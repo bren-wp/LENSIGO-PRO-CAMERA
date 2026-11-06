@@ -112,3 +112,9 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - The supplied design has a dark `#0E2134` upper background fading to `#08111E`, an aperture starting around 24.5% from the top, four lower cyan/navy arcs and a cyan circular loading indicator.
 - This revision models the arcs with Compose Canvas, positions the logo proportionally and hides Android system bars only while the Splash is visible. Regular Android navigation and status bars are restored on later screens.
 - **Verification pending:** the above is a source-guided layout reconstruction, NOT an emulator screenshot comparison. OEM system bar transitions, density/font scale and exact pixel scores still need device capture.
+
+## Home reference photography + icon fidelity (original package)
+
+- The source `assets/photo.jpg` (same `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`) supplied the hero artwork for mobile reference 04 and its camera scene. This revision packages a local, center-cropped **300×134 WebP** (about 3 KB) as `res/drawable-nodpi/lensigo_home_hero.webp`. It is not a fabricated landscape or remote image.
+- Eight camera-mode icons have changed from filled Material glyphs to outlined variants closer to the 04 reference. Standard card layout (two columns on phone, four on tablet, single narrow-phone fallback) is preserved.
+- The smaller WebP is lossy; this is a UI fidelity improvement, not a proof of exact original image pixels. Improve the asset resolution when the full source can be safely checked in, and compare real Android emulator screenshots against 04_home.png before marking 1:1.

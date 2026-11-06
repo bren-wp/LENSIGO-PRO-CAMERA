@@ -13,6 +13,7 @@ import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -23,6 +24,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.painterResource
@@ -51,16 +53,20 @@ private data class ModeTile(
 )
 
 private val tiles = listOf(
-    ModeTile(CameraMode.PHOTO, "Foto", "Fotografiranje", Icons.Default.CameraAlt),
-    ModeTile(CameraMode.VIDEO, "Video", "Videosnimanje", Icons.Default.Videocam),
-    ModeTile(CameraMode.PRO, "Pro način", "Ručne kontrole", Icons.Default.Tune),
-    ModeTile(CameraMode.NIGHT, "Noćni način", "Noćno snimanje", Icons.Default.NightsStay),
-    ModeTile(CameraMode.PORTRAIT, "Portret", "Portretni način", Icons.Default.PersonOutline),
-    ModeTile(CameraMode.PANORAMA, "Panorama", "Panoramsko snimanje", Icons.Default.Panorama),
-    ModeTile(CameraMode.DUAL, "Dual kamera", "Dvije kamere", Icons.Default.ViewWeek),
-    ModeTile(CameraMode.FILTERS, "Filteri", "Fotografski filteri", Icons.Default.AutoAwesome)
+    ModeTile(CameraMode.PHOTO, "Foto", "Fotografiranje", Icons.Outlined.CameraAlt),
+    ModeTile(CameraMode.VIDEO, "Video", "Videosnimanje", Icons.Outlined.Videocam),
+    ModeTile(CameraMode.PRO, "Pro način", "Ručne kontrole", Icons.Outlined.Tune),
+    ModeTile(CameraMode.NIGHT, "Noćni način", "Noćno snimanje", Icons.Outlined.NightsStay),
+    ModeTile(CameraMode.PORTRAIT, "Portret", "Portretni način", Icons.Outlined.PersonOutline),
+    ModeTile(CameraMode.PANORAMA, "Panorama", "Panoramsko snimanje", Icons.Outlined.Panorama),
+    ModeTile(CameraMode.DUAL, "Dual kamera", "Dvije kamere", Icons.Outlined.ViewWeek),
+    ModeTile(CameraMode.FILTERS, "Filteri", "Fotografski filteri", Icons.Outlined.AutoAwesome)
 )
 
+/**
+ * The actual user-supplied sunset photograph from assets/photo.jpg, cropped
+ * locally and packaged as a tiny WebP. No remote image loading or network use.
+ */
 @Composable
 private fun BrandBanner() {
     val fontScale = LocalDensity.current.fontScale
@@ -69,46 +75,28 @@ private fun BrandBanner() {
         fontScale >= 1.2f -> 200.dp
         else -> 164.dp
     }
-    Box(Modifier.fillMaxWidth().height(bannerHeight)
-        .clip(RoundedCornerShape(21.dp))
-        .border(1.dp, Outline, RoundedCornerShape(21.dp))) {
-        // Scenic local rendering until the source JPEG is bundled. No network request.
-        Canvas(Modifier.fillMaxSize()) {
-            val w = size.width
-            val h = size.height
-            drawRect(
-                brush = Brush.verticalGradient(
-                    0f to Color(0xFFB96D3C), .37f to Color(0xFFF29A33),
-                    .56f to Color(0xFF783A30), 1f to Color(0xFF09283B)
+    Box(
+        Modifier.fillMaxWidth().height(bannerHeight)
+            .clip(RoundedCornerShape(21.dp))
+            .border(1.dp, Outline, RoundedCornerShape(21.dp))
+    ) {
+        Image(
+            painter = painterResource(R.drawable.lensigo_home_hero),
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize()
+        )
+        Box(
+            Modifier.fillMaxSize().background(
+                Brush.horizontalGradient(
+                    listOf(Color(0xBE061321), Color(0x44061220), Color.Transparent)
                 )
             )
-            drawCircle(Color(0xFFFFCE6D), radius = h * .12f,
-                center = Offset(w * .67f, h * .31f))
-            val mountains = Path().apply {
-                moveTo(w * .4f, h * .73f)
-                lineTo(w * .52f, h * .56f)
-                lineTo(w * .63f, h * .64f)
-                lineTo(w * .79f, h * .39f)
-                lineTo(w, h * .57f)
-                lineTo(w, h)
-                lineTo(w * .4f, h)
-                close()
-            }
-            drawPath(mountains, Color(0xFF263044))
-            val shore = Path().apply {
-                moveTo(0f, h * .78f)
-                lineTo(w * .19f, h * .72f)
-                lineTo(w * .35f, h * .83f)
-                lineTo(w * .59f, h * .70f)
-                lineTo(w * .68f, h)
-                lineTo(0f, h)
-                close()
-            }
-            drawPath(shore, Color(0xFF123748))
-            drawRect(Color(0x6605111D))
-        }
-        Column(Modifier.align(Alignment.BottomStart).padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        )
+        Column(
+            Modifier.align(Alignment.BottomStart).padding(18.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
             Text("OTKRIJ NOVU PERSPEKTIVU", color = Cyan,
                 fontWeight = FontWeight.Bold, fontSize = 11.sp)
             Text("Svaki kadar.\nTvoja priča.", color = White,
@@ -127,7 +115,9 @@ internal fun LensigoHomeScreen(
     onSettings: () -> Unit,
     onAbout: () -> Unit
 ) {
-    BoxWithConstraints(Modifier.fillMaxSize().background(Midnight)) {
+    BoxWithConstraints(Modifier.fillMaxSize().background(Brush.verticalGradient(
+        listOf(Midnight, Color(0xFF0B1C2B), Color(0xFF07111E))
+    ))) {
         val tablet = maxWidth >= 600.dp
         val narrowPhone = maxWidth < 340.dp
         val fontScale = LocalDensity.current.fontScale
@@ -138,7 +128,7 @@ internal fun LensigoHomeScreen(
                     .heightIn(min = 77.dp).padding(horizontal = 17.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                LensigoBrandMark(Modifier.size(48.dp).clickable(
+                LensigoBrandMark(Modifier.size(44.dp).clickable(
                     onClickLabel = "O aplikaciji LENSIGO",
                     role = Role.Button, onClick = onAbout
                 ))
@@ -175,7 +165,10 @@ internal fun LensigoHomeScreen(
                 items(tiles, key = { it.mode.name }) { tile ->
                     Column(
                         Modifier.fillMaxWidth().heightIn(min = 105.dp)
-                            .background(CardColor, RoundedCornerShape(17.dp))
+                            .background(
+                                Brush.linearGradient(listOf(Color(0xFF1B394F), Color(0xFF143048))),
+                                RoundedCornerShape(17.dp)
+                            )
                             .border(1.dp, Outline, RoundedCornerShape(17.dp))
                             .clickable(onClickLabel = tile.hint, role = Role.Button) {
                                 onMode(tile.mode)
