@@ -23,7 +23,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
 // Shared design tokens measured against the Brendigo settings references.
-private val Midnight = Color(0xFF0E2336)
 private val Panel = Color(0xFF182F43)
 private val Cyan = Color(0xFF00D4FF)
 private val White = Color(0xFFF7FCFF)
@@ -140,7 +139,7 @@ internal fun LensigoSettingsScreen(
         },
         confirmButton = { TextButton(onClick = { timerDialog = false }) { Text("Zatvori") } }
     )
-    Column(Modifier.fillMaxSize().background(Midnight)) {
+    Column(Modifier.fillMaxSize().background(LensigoReferenceBackground)) {
         SettingsHeader("Postavke", onBack, onCameraSettings)
         Column(Modifier.weight(1f).fillMaxWidth().verticalScroll(rememberScrollState())
             .padding(horizontal = 17.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -216,7 +215,7 @@ internal fun LensigoCameraSettingsScreen(
     onMicrophone: () -> Unit,
     onBack: () -> Unit
 ) {
-    Column(Modifier.fillMaxSize().background(Midnight)) {
+    Column(Modifier.fillMaxSize().background(LensigoReferenceBackground)) {
         SettingsHeader("Postavke kamere", onBack, onBack)
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
             .padding(horizontal = 17.dp), horizontalAlignment = Alignment.CenterHorizontally) {

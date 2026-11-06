@@ -237,3 +237,9 @@ Izvori: izvorni paket `LENSIGO_Branding_Android_UI_19_ekrana(1).zip` (`izvoz/mob
 - **Panorama / Dual / izmjena prednje kamere:** različiti gumbi imaju odgovarajuće pristupačne nazive; pri promjeni objektiva gasi se bljeskalica.
 - **CameraX lifecycle:** pri rebindu i izlasku s kamere čiste se reference stare instance, što sprječava pokušaj snimanja putem neaktivnog use casea.
 - Dodani su JVM testovi dostupnosti okidača i stvarnih raspona zoom kontrola. OEM CameraX testovi i pravi screenshot pixel-diff ostaju obvezni prije potvrde potpunog 1:1.
+
+## Izravno mjerenje referentne pozadine 13–19 (mobitel 1080×2400)
+
+Dostavljeni izvorni PNG-ovi `13_gallery.png`, `15_editor.png`, `16_settings.png`, `17_camera-settings.png`, `18_privacy.png`, `19_about.png` imaju jednaku postepenu promjenu pozadine (mjereno na x=16): y=100 RGB(14,33,52), y=700 RGB(14,34,53), y=1000 RGB(14,33,52), y=1600 RGB(12,28,45), y=2320 RGB(8,18,31). Prijašnji Compose kod koristio je gotovo jednobojnu tamnoplavu podlogu.
+
+Uvedena je zajednička izvorno izmjerena `LensigoReferenceBackground` gradijentna četverostupanjska pozadina na 13 Galeriji, 15 Editoru, 16–17 Postavkama, 18 Privatnosti i 19 O aplikaciji. Tamna pozadina 14 Viewer ostaje odvojena od Editora kao na referenci. Ovo ispravlja **konkretno potvrđeno odstupanje boja i gradijenta**, ali još nije matematički dokaz pixel-perfect 1:1 jer se izmjerene točke aproksimiraju i nema potvrđenih snimaka stvarne Android aplikacije.

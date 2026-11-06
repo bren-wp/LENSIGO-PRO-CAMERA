@@ -70,7 +70,7 @@ jobs:
               if gh release upload "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --clobber; then
                 exit 0
               fi
-            elif gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO $TAG: Pixel comparison tooling can exclude explicitly identified dynamic sensor rectangles while preserving separate full-frame and actually-compared-region metrics. Added regression tests: masks outside bounds or covering the entire image fail closed. Earlier UI work added functional Viewer zoom, Gallery retry, reliable Editor Back, correct settings toggle semantics and hardware-gated CameraX flash, zoom and shutter. APK debug-signed, AAB unsigned; no verified 1:1 device screenshots yet."; then
+            elif gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO $TAG: Reference source pixel sampling identified a shared navy-to-deep gradient for Gallery, Editor, Settings, Camera Settings, Privacy and About. All now share a measured four-stop Compose gradient instead of the previous solid background; Viewer retains its separate dark source surface. Other changes include functional photo zoom, Gallery retry, reliable Editor Back, hardware-gated camera controls, and the explicit-region pixel audit tool. Screenshots from real Android devices are still needed for verified 1:1. Preview APK debug-signed; AAB unsigned."; then
               exit 0
             fi
             if [ "$attempt" -eq 4 ]; then

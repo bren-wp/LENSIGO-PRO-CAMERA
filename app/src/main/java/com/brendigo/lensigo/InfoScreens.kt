@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.sp
  * Fixed maximum content width keeps phone and tablet typography readable;
  * vertical scrolling and dynamic row heights avoid clipping with large fonts.
  */
-private val Bg = Color(0xFF0D2133)
 private val Surface = Color(0xFF152E43)
 private val Cyan = Color(0xFF00C9F7)
 private val White = Color(0xFFF6FBFF)
@@ -100,7 +99,7 @@ fun LensigoPrivacyScreen(
     onSettings: () -> Unit,
     onPermissions: () -> Unit
 ) {
-    Column(Modifier.fillMaxSize().background(Bg)) {
+    Column(Modifier.fillMaxSize().background(LensigoReferenceBackground)) {
         InfoHeader("Privatnost", onBack, onSettings)
         Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())
             .padding(horizontal = 18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
@@ -158,7 +157,7 @@ fun LensigoAboutScreen(
     onLicences: () -> Unit,
     onWebsite: () -> Unit
 ) {
-    Column(Modifier.fillMaxSize().background(Bg)) {
+    Column(Modifier.fillMaxSize().background(LensigoReferenceBackground)) {
         InfoHeader("O aplikaciji", onBack, onSettings)
         Column(Modifier.fillMaxWidth().weight(1f).verticalScroll(rememberScrollState())
             .padding(horizontal = 18.dp),
@@ -206,7 +205,7 @@ fun LensigoAboutScreen(
 @Composable
 fun LensigoLicencesScreen(onBack: () -> Unit, onSettings: () -> Unit) {
     val context = LocalContext.current
-    Column(Modifier.fillMaxSize().background(Bg)) {
+    Column(Modifier.fillMaxSize().background(LensigoReferenceBackground)) {
         InfoHeader("Licence i zahvale", onBack, onSettings)
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
             .padding(20.dp), verticalArrangement = Arrangement.spacedBy(14.dp)) {

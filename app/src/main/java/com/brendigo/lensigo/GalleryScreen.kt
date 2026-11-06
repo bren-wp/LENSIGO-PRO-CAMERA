@@ -62,7 +62,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
-private val GalleryInk = Color(0xFF03080F)
+private val GalleryInk = Color(0xFF020508)
 private val GalleryCyan = Color(0xFF00D4FF)
 private val GalleryText = Color(0xFFF7FCFF)
 private val GalleryMuted = Color(0xFF9DB5C4)
@@ -96,7 +96,7 @@ fun GalleryScreen(onBack: () -> Unit, onOpen: (LensMedia) -> Unit,
             else -> true
         }
     }
-    Column(Modifier.fillMaxSize().background(Color(0xFF0D2133))) {
+    Column(Modifier.fillMaxSize().background(LensigoReferenceBackground)) {
         Row(Modifier.fillMaxWidth().height(65.dp).padding(horizontal = 12.dp),
             verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = onBack) {
@@ -342,7 +342,9 @@ fun ViewerScreen(
             Text("Odustani")
         } }
     )
-    Column(Modifier.fillMaxSize().background(if (editing) Color(0xFF0D2133) else Color.Black)) {
+    Column(Modifier.fillMaxSize().then(if (editing)
+        Modifier.background(LensigoReferenceBackground)
+        else Modifier.background(GalleryInk))) {
         Row(Modifier.fillMaxWidth().height(61.dp).padding(horizontal = 10.dp),
             verticalAlignment = Alignment.CenterVertically) {
             IconButton(onClick = { if (editing) editing = false else onBack() }) {
