@@ -29,7 +29,7 @@ private val Border = Color(0xFF2D536A)
 
 @Composable
 private fun SettingsHeader(title: String, onBack: () -> Unit, onMenu: () -> Unit) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 58.dp)
+    Row(Modifier.fillMaxWidth().heightIn(min = 65.dp)
         .padding(horizontal = 10.dp), verticalAlignment = Alignment.CenterVertically) {
         IconButton(onClick = onBack) { Icon(Icons.Default.ArrowBack, "Natrag", tint = White) }
         Text(title, color = White, fontSize = 17.sp, fontWeight = FontWeight.SemiBold,
@@ -170,18 +170,6 @@ internal fun LensigoSettingsScreen(
                     SettingsItem(Icons.Default.VerifiedUser, "Dozvole",
                         "Kamera, mikrofon i pristup datotekama", onClick = onPrivacy)
                 }
-                SettingsSection("Obrada fotografija") {
-                    SettingsItem(Icons.Default.Memory, "Štedljiva obrada",
-                        "Manje korištenje memorije", checked = lowMemory,
-                        onToggle = onLowMemory)
-                    SettingsDivider()
-                    SettingsItem(Icons.Default.BlurOn, "Smanjenje šuma",
-                        "Blago zaglađivanje slike", checked = noise, onToggle = onNoise)
-                    SettingsDivider()
-                    SettingsItem(Icons.Default.AutoFixHigh, "Izoštravanje",
-                        "Dodatno naglašavanje rubova", checked = sharpen,
-                        onToggle = onSharpen)
-                }
                 SettingsSection("Aplikacija") {
                     SettingsItem(Icons.Default.Language, "Jezik sučelja",
                         "Trenutačni jezik", "Hrvatski")
@@ -191,11 +179,6 @@ internal fun LensigoSettingsScreen(
                     SettingsDivider()
                     SettingsItem(Icons.Default.Info, "O aplikaciji",
                         "LENSIGO by Brendigo", onClick = onAbout)
-                    SettingsDivider()
-                    SettingsItem(Icons.Default.Mic, "Mikrofon za video",
-                        "Snimanje videozapisa sa zvukom",
-                        if (hasMicPermission) "Dopušten" else "Dopusti",
-                        onClick = onMicrophone)
                 }
                 Spacer(Modifier.height(28.dp))
             }
@@ -207,6 +190,7 @@ internal fun LensigoSettingsScreen(
 internal fun LensigoCameraSettingsScreen(
     jpegQuality: Int,
     grid: Boolean,
+    photoAspectWide: Boolean,
     preferSD: Boolean,
     noise: Boolean,
     sharpen: Boolean,
@@ -214,6 +198,7 @@ internal fun LensigoCameraSettingsScreen(
     hasMicrophone: Boolean,
     onQuality: (Int) -> Unit,
     onQualityFinished: () -> Unit,
+    onPhotoAspect: (Boolean) -> Unit,
     onGrid: (Boolean) -> Unit,
     onSD: (Boolean) -> Unit,
     onNoise: (Boolean) -> Unit,
@@ -245,6 +230,11 @@ internal fun LensigoCameraSettingsScreen(
                             onValueChange = { onQuality(it.toInt()) },
                             onValueChangeFinished = onQualityFinished)
                     }
+                    SettingsDivider()
+                    SettingsItem(Icons.Default.AspectRatio, "Omjer slike",
+                        "Fotografiranje u 4:3 ili 16:9",
+                        if (photoAspectWide) "16:9" else "4:3",
+                        onClick = { onPhotoAspect(!photoAspectWide) })
                     SettingsDivider()
                     SettingsItem(Icons.Default.GridOn, "Mreža kadra",
                         "Pravilo trećina", checked = grid, onToggle = onGrid)

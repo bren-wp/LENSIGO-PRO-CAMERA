@@ -145,7 +145,10 @@ private fun LensigoApplication() {
     var pipOnLeft by remember { mutableStateOf(false) }
     val modeListState = rememberLazyListState()
     LaunchedEffect(mode) { modeListState.animateScrollToItem((CameraMode.entries.indexOf(mode) - 2).coerceAtLeast(0)) }
-    var aspectWide by remember { mutableStateOf(prefs.getBoolean("photo_aspect_wide", false)) }
+    var photoAspectWide by remember {
+        mutableStateOf(prefs.getBoolean("photo_aspect_wide", false))
+    }
+    var aspectWide by remember { mutableStateOf(photoAspectWide) }
     var preferSD by remember { mutableStateOf(prefs.getBoolean("video_sd", true)) }
     var lowMemory by remember { mutableStateOf(prefs.getBoolean("low_memory", true)) }
     var softenNoise by remember { mutableStateOf(prefs.getBoolean("noise", false)) }
@@ -458,7 +461,7 @@ private fun LensigoApplication() {
             // Remember a separate aspect ratio for video and still photos.
             aspectWide = if (next == CameraMode.VIDEO)
                 prefs.getBoolean("video_aspect_wide", true)
-                else prefs.getBoolean("photo_aspect_wide", false)
+                else photoAspectWide
         }
         mode = next
         brightness = 0f; contrast = 1f; saturation = 1f
@@ -779,6 +782,9 @@ private fun LensigoApplication() {
                             modifier = Modifier.clickable {
                                 if (!isRecording) {
                                     aspectWide = !aspectWide
+                                    if (mode != CameraMode.VIDEO) {
+                                        photoAspectWide = aspectWide
+                                    }
                                     prefs.edit().putBoolean(
                                         if (mode == CameraMode.VIDEO) "video_aspect_wide"
                                         else "photo_aspect_wide", aspectWide
@@ -1092,12 +1098,18 @@ private fun LensigoApplication() {
                 )
                 Screen.CAMERA_SETTINGS -> LensigoCameraSettingsScreen(
                     jpegQuality = jpegQuality,
-                    grid = gridEnabled, preferSD = preferSD,
+                    grid = gridEnabled, photoAspectWide = photoAspectWide,
+                    preferSD = preferSD,
                     noise = softenNoise, sharpen = sharpen,
                     lowMemory = lowMemory, hasMicrophone = hasMicPermission,
                     onQuality = { jpegQuality = it },
                     onQualityFinished = {
                         prefs.edit().putInt("quality", jpegQuality).apply()
+                    },
+                    onPhotoAspect = { newRatio ->
+                        photoAspectWide = newRatio
+                        prefs.edit().putBoolean("photo_aspect_wide", newRatio).apply()
+                        if (mode != CameraMode.VIDEO) aspectWide = newRatio
                     },
                     onGrid = { gridEnabled = it; prefs.edit().putBoolean("grid", it).apply() },
                     onSD = { preferSD = it; prefs.edit().putBoolean("video_sd", it).apply() },

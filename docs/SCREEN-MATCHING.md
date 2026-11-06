@@ -175,3 +175,9 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - Viewer top-right now uses the original reference's horizontal ellipsis menu; Favorite toggle remains functional inside it, alongside Share, Save copy and Delete. Bottom action bar remains accessible.
 - Editor's top-right gear now opens actual app settings. Image transformations still use the shared crop/rotate/filter pipeline and save a separate copy rather than overwriting originals.
 - Emulator/physical-screen pixel comparisons for all three screens are not yet recorded; real photographs differ from source-designed scene samples.
+
+## 16 Settings / 17 Camera Settings — source-aligned, real controls only
+
+- Reference Settings 16 contains Kamera, Privatnost i pohrana, Aplikacija panels. The real Android menu preserves this main hierarchy. Advanced noise/sharpen/low-memory controls remain **in the actual Camera Settings 17 screen**, rather than appearing in a duplicated extra panel on the main Settings page. The microphone permission remains available in Camera Settings.
+- Reference Camera Settings 17 includes an aspect ratio. Added a persisted real 4:3/16:9 still-photo preference, synced with the camera header and retained when switching between Photo and Video. JPEG quality, grid, SD/HD preference and all pre-existing real processing controls still operate.
+- The mockup's RAW/HEIF/4K60/HDR toggles were not inserted because the current CameraX capture pipeline has no verified implementation for them. Device-level screenshots and compatibility testing remain required.
