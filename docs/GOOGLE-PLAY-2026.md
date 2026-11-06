@@ -10,7 +10,7 @@ Verified against Android Developers / Google Play documentation on November 6, 2
 | Device range | minSdk 24, Android 7+ | Build only, hardware tests outstanding |
 | Stable build toolchain | AGP 9.3.1, Gradle 9.6.0, Kotlin Compose plugin 2.4.21 | CI enforced |
 | AndroidX stable releases | Compose BOM 2026.09.00; Activity 1.13.0; Lifecycle 2.11.0; Core 1.19.1; CameraX 1.6.2; Exif 1.4.2 | Dependency resolution in CI |
-| 16-KB memory pages | If APK/AAB contains native .so libraries, fail CI until alignment is verified. For pure managed code no ELF alignment necessary. | Preflight; emulator verification still required |
+| 16-KB memory pages | Inspect 64-bit native ELF PT_LOAD segments for >= 16 KiB alignment; check stored APK ZIP payload alignment. AAB packaging must also be verified via bundletool and Google Play Console. | Preflight; emulator verification still required |
 | Dangerous permissions | CAMERA, RECORD_AUDIO; WRITE_EXTERNAL_STORAGE restricted to <= API 28 | Android manifest |
 | Read media / storage | MediaStore app-created items. No READ_MEDIA_IMAGES/VIDEO broad access | Static manifest review; platform tests outstanding |
 | Data handling | No INTERNET permission, no advertising ID permission, no analytics, no cloud upload | Source/manifest, dependency graph must be checked |
@@ -35,3 +35,7 @@ Verified against Android Developers / Google Play documentation on November 6, 2
 - https://developer.android.com/develop/ui/compose/setup-compose-dependencies-and-compiler
 - https://developer.android.com/jetpack/androidx/releases/camera
 - https://support.google.com/googleplay/android-developer/answer/9857753
+
+### Native libraries and 16 KiB gate
+
+Current CameraX / AndroidX dependency graph includes `libimage_processing_util_jni.so`, `libsurface_util_jni.so` and `libandroidx.graphics.path.so`. CI validates the **ELF LOAD segments of 64-bit builds** and that uncompressed APK native libraries begin at 16 KiB-aligned payload offsets. Unlike the first conservative check, the presence of any `.so` is not itself a failure. Any actual alignment failure blocks release and must be fixed upstream or by rebuilding the library; do not simply disable the check. Verify a signed AAB using bundletool/Play Console too.
