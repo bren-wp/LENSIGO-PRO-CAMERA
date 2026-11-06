@@ -209,3 +209,9 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - **04 Home / Camera / Gallery / Settings / About:** vraćanje sada poštuje ekran s kojeg je korisnik došao. Camera → Home, Home → izlaz, Gallery → svoj stvarni prethodni zaslon, Settings i About → odgovarajući izvorni zaslon. Svi vidljivi gumbi za povratak usklađeni su sa sustavnom navigacijom.
 - Dodani su JUnit testovi da se izvorni redoslijed načinâ rada ne može slučajno pokvariti, a nijedan način rada nestati.
 - Potrebni su testovi na uređaju za Back geste, veliki font i CameraX izlaz/povratak; vizualni 1:1 i dalje nije potvrđen stvarnim screenshot usporedbama.
+
+## Filteri, noćna obrada i uređivač — optimizacija memorije (nakon v0.7.41)
+
+- **05 Photo / 08 Night / 09 Portrait / 12 Filters / 15 Editor:** JPEG dekodiranje neće se potpuno prekinuti samo zbog nečitljivog EXIF bloka; u tom se slučaju zadržava izvorna orijentacija umjesto pretpostavljanja nepostojeće rotacije.
+- **Lokalni filtri i obrada šuma:** uklonjeno je stvaranje zasebnog `IntArray` objekta za svaki obrađeni redak. Sada se koristi jedan izlazni tampon koji se ponovno upotrebljava. Matematička formula piksela ostaje neizmijenjena.
+- **Provjere koje nedostaju:** stvarni memorijski profil na API 24–36 i usporedba izlaznih JPEG piksela na fizičkom uređaju. Nije dokazano da su svi prikazi vizualno 1:1.

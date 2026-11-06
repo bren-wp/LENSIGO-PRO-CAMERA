@@ -70,7 +70,7 @@ jobs:
               if gh release upload "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --clobber; then
                 exit 0
               fi
-            elif gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO $TAG: Camera mode navigation now follows the original FOTO screen order (FILTERI, VIDEO, FOTO, PRO, NOC); system Back and screen Back actions return to the correct source for Home, Gallery, Settings, and About. Added unit tests preserving all eight camera modes exactly once. Earlier changes improved Welcome/Permissions visual structure and capture/recording lifecycle reliability. Preview only: device screenshot pixel audit and physical camera tests remain outstanding. APK debug-signed; AAB unsigned, not Google Play-ready."; then
+            elif gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO $TAG: Local image processing now reuses scanline memory for denoise/sharpen filters and tolerates unreadable EXIF metadata while preserving decodable photos. This benefits Photo, Night, Portrait, Filters and Editor. Earlier releases improved camera mode navigation, permission cards, and recording lifecycle/storage failures. Preview only: real Android screenshots, physical-device CameraX tests and 1:1 checks remain necessary. APK debug-signed; AAB unsigned, not Google Play-ready."; then
               exit 0
             fi
             if [ "$attempt" -eq 4 ]; then

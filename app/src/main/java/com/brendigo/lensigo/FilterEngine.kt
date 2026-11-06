@@ -142,9 +142,11 @@ object FilterEngine {
         }
         val bitmap = requireNotNull(BitmapFactory.decodeFile(file.absolutePath, options))
         // Also honor mirrored EXIF orientations used by some front cameras.
-        val exif = ExifInterface(file.absolutePath)
-        val rotation = exif.rotationDegrees
-        val mirrored = exif.isFlipped
+        // A damaged EXIF segment must not prevent a decodable JPEG from
+        // opening in the editor or in the local capture pipeline.
+        val (rotation, mirrored) = runCatching {
+            ExifInterface(file.absolutePath).let { it.rotationDegrees to it.isFlipped }
+        }.getOrDefault(0 to false)
         if (rotation == 0 && !mirrored) return bitmap
         val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height,
             Matrix().apply {
@@ -168,11 +170,14 @@ object FilterEngine {
         val previous = IntArray(width)
         val current = IntArray(width)
         val next = IntArray(width)
+        // Reuse one output scanline rather than allocating a new IntArray
+        // for every row of a multi-megapixel photo.
+        val out = IntArray(width)
         result.getPixels(previous, 0, width, 0, 0, width, 1)
         result.getPixels(current, 0, width, 0, 1, width, 1)
         for (y in 1 until height - 1) {
             result.getPixels(next, 0, width, 0, y + 1, width, 1)
-            val out = current.copyOf()
+            java.lang.System.arraycopy(current, 0, out, 0, width)
             for (x in 1 until width - 1) {
                 val center = current[x]
                 val up = previous[x]
