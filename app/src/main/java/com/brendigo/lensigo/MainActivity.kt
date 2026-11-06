@@ -953,73 +953,78 @@ private fun LensigoApplication() {
                             })
                     }
                 }
-                Screen.SETTINGS -> PageScaffold("Postavke", onBack = { moveTo(Screen.CAMERA) }) {
-                    Text("Postavke", color = White, fontWeight = FontWeight.Bold,
-                        fontSize = 30.sp)
-                    Text("Prilagodi LENSIGO svojem načinu snimanja.", color = Muted)
-                    Text("KAMERA", color = Cyan, fontSize = 13.sp, fontWeight = FontWeight.Bold)
-                    TextButton(onClick = { moveTo(Screen.CAMERA_SETTINGS) }) {
-                        Text("Detaljne postavke kamere", color = White)
-                    }
-                    SettingToggle("Mreža kadra", "Pomoć pri kompoziciji",
-                        gridEnabled) { gridEnabled = it; prefs.edit().putBoolean("grid",it).apply() }
-                    Text("Samookidač: " + if (timerSeconds == 0) "Isključeno" else
-                        timerSeconds.toString() + " s", color = White)
-                    Row(horizontalArrangement = Arrangement.spacedBy(6.dp)) {
-                        listOf(0,3,5,10).forEach { seconds ->
-                            FilterChip(selected = timerSeconds == seconds,
-                                onClick = {
-                                    timerSeconds = seconds
-                                    prefs.edit().putInt("timer",seconds).apply()
-                                }, label = { Text(if (seconds == 0) "Off" else seconds.toString() + "s") })
-                        }
-                    }
-                    SettingToggle("Zvuk okidača", "Zvuk pri fotografiranju",
-                        shutterSound) {
+                Screen.SETTINGS -> LensigoSettingsScreen(
+                    grid = gridEnabled, timerSeconds = timerSeconds,
+                    shutterSound = shutterSound, lowMemory = lowMemory,
+                    noise = softenNoise, sharpen = sharpen, preferSD = preferSD,
+                    jpegQuality = jpegQuality, hasMicPermission = hasMicPermission,
+                    onGrid = { gridEnabled = it; prefs.edit().putBoolean("grid", it).apply() },
+                    onTimer = { timerSeconds = it; prefs.edit().putInt("timer", it).apply() },
+                    onSound = {
                         shutterSound = it
                         prefs.edit().putBoolean("shutter_sound", it).apply()
-                    }
-                    Text("OBRADA I VIDEO", color = Cyan, fontSize = 13.sp,
-                        fontWeight = FontWeight.Bold)
-                    SettingToggle("Štedljiva obrada (2048 px)", "Manje memorije, brži filtri",
-                        lowMemory) { lowMemory = it; prefs.edit().putBoolean("low_memory", it).apply() }
-                    SettingToggle("Smanjenje šuma", "Blago zaglađivanje jednobojnih površina",
-                        softenNoise) { softenNoise = it; prefs.edit().putBoolean("noise", it).apply() }
-                    SettingToggle("Dodatno izoštravanje", "Pojačava rubove; može pojačati šum",
-                        sharpen) { sharpen = it; prefs.edit().putBoolean("sharpen", it).apply() }
-                    SettingToggle("SD video (za slabije uređaje)", "Prednost kompatibilnosti i manjoj datoteci",
-                        preferSD) { preferSD = it; prefs.edit().putBoolean("video_sd", it).apply() }
-                    Text("JPEG kvaliteta: " + jpegQuality + "%", color = White)
-                    Slider(value = jpegQuality.toFloat(), valueRange = 70f..100f,
-                        onValueChange = { jpegQuality = it.toInt() },
-                        onValueChangeFinished = { prefs.edit().putInt("quality", jpegQuality).apply() })
-                    Button(onClick = { requestMic.launch(Manifest.permission.RECORD_AUDIO) }) {
-                        Text(if (hasMicPermission) "Mikrofon dopušten" else "Dopusti mikrofon za video")
-                    }
-                    HorizontalDivider()
-                    TextButton(onClick = {
+                    },
+                    onLowMemory = {
+                        lowMemory = it
+                        prefs.edit().putBoolean("low_memory", it).apply()
+                    },
+                    onNoise = {
+                        softenNoise = it
+                        prefs.edit().putBoolean("noise", it).apply()
+                    },
+                    onSharpen = {
+                        sharpen = it
+                        prefs.edit().putBoolean("sharpen", it).apply()
+                    },
+                    onSD = { preferSD = it; prefs.edit().putBoolean("video_sd", it).apply() },
+                    onCameraSettings = { moveTo(Screen.CAMERA_SETTINGS) },
+                    onMicrophone = {
+                        if (!hasMicPermission) {
+                            requestMic.launch(Manifest.permission.RECORD_AUDIO)
+                        } else {
+                            runCatching {
+                                context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.fromParts("package", context.packageName, null)))
+                            }
+                        }
+                    },
+                    onPrivacy = {
                         privacyReturnScreen = Screen.SETTINGS
                         moveTo(Screen.PRIVACY)
-                    }) { Text("Privatnost i dozvole") }
-                    TextButton(onClick = { moveTo(Screen.ABOUT) }) { Text("O aplikaciji") }
-                }
-                Screen.CAMERA_SETTINGS -> PageScaffold("Postavke kamere",
-                    onBack = { moveTo(Screen.SETTINGS) }) {
-                    Text("Fotografije", color = Cyan, fontWeight = FontWeight.Bold)
-                    Text("JPEG kvaliteta " + jpegQuality + "%", color = White)
-                    Slider(value = jpegQuality.toFloat(), valueRange = 70f..100f,
-                        onValueChange = { jpegQuality = it.toInt() },
-                        onValueChangeFinished = {
-                            prefs.edit().putInt("quality", jpegQuality).apply()
-                        })
-                    SettingToggle("Mreža kadra", "Prikazuje pravilo trećina",
-                        gridEnabled) { gridEnabled = it; prefs.edit().putBoolean("grid", it).apply() }
-                    SettingToggle("SD video", "Za slabije kamere i manje datoteke",
-                        preferSD) { preferSD = it; prefs.edit().putBoolean("video_sd",it).apply() }
-                    Text("JPEG fotografije i SD/HD video stvarno su podržani. " +
-                        "HEIF, RAW i 4K/60 nisu ponuđeni jer nisu implementirani.",
-                        color = Muted, fontSize = 13.sp)
-                }
+                    },
+                    onAbout = { moveTo(Screen.ABOUT) },
+                    onBack = { moveTo(Screen.CAMERA) }
+                )
+                Screen.CAMERA_SETTINGS -> LensigoCameraSettingsScreen(
+                    jpegQuality = jpegQuality,
+                    grid = gridEnabled, preferSD = preferSD,
+                    noise = softenNoise, sharpen = sharpen,
+                    lowMemory = lowMemory, hasMicrophone = hasMicPermission,
+                    onQuality = { jpegQuality = it },
+                    onQualityFinished = {
+                        prefs.edit().putInt("quality", jpegQuality).apply()
+                    },
+                    onGrid = { gridEnabled = it; prefs.edit().putBoolean("grid", it).apply() },
+                    onSD = { preferSD = it; prefs.edit().putBoolean("video_sd", it).apply() },
+                    onNoise = { softenNoise = it; prefs.edit().putBoolean("noise", it).apply() },
+                    onSharpen = { sharpen = it; prefs.edit().putBoolean("sharpen", it).apply() },
+                    onLowMemory = {
+                        lowMemory = it
+                        prefs.edit().putBoolean("low_memory", it).apply()
+                    },
+                    onMicrophone = {
+                        if (!hasMicPermission) {
+                            requestMic.launch(Manifest.permission.RECORD_AUDIO)
+                        } else {
+                            runCatching {
+                                context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                                    Uri.fromParts("package", context.packageName, null)))
+                            }
+                        }
+                    },
+                    onBack = { moveTo(Screen.SETTINGS) },
+                    onAbout = { moveTo(Screen.ABOUT) }
+                )
                 Screen.PRIVACY -> LensigoPrivacyScreen(
                     onBack = { moveTo(privacyReturnScreen) },
                     onSettings = { moveTo(Screen.SETTINGS) },
