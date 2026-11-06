@@ -227,3 +227,13 @@ Izvori: izvorni paket `LENSIGO_Branding_Android_UI_19_ekrana(1).zip` (`izvoz/mob
 - **18 Privacy i 19 About:** izvorna grupiranja, boje i raspored zadržani su; interaktivni informacijski retci dobili su eksplicitnu oznaku za čitač zaslona.
 - **Preostalo:** fotografirati svih 7 zaslona na uređaju uz identične insets, fontScale i gustoću piksela te provesti stvarni pixel-diff s referentnim PNG-ovima prije bilo kakve tvrdnje o 1:1.
 
+
+## 05–12 — stvarne kontrole kamere i sigurnosna stanja (iteracija v0.7.44)
+
+- **Bljeskalica:** gumb je vidljivo onemogućen bez stvarnog hardverskog flasha ili prije CameraX bindinga; ne nudi nepostojeće osvjetljenje na prednjoj kameri.
+- **Zoom:** prikazuju se samo dostupne razine uz fallback za nestandardnu kameru. Odabrana razina ažurira se nakon što CameraX stvarno prihvati `setZoomRatio`; neuspjeh se javlja korisniku.
+- **Omjer, kvaliteta videa, Postavke, galerija, izmjena načina snimanja:** nisu lažno aktivni tijekom snimanja/obrade; promjene omjera spremaju se u postojeće lokalne postavke.
+- **Okidač:** gumb je omoguć en tek kad CameraX pripremi stvarni foto/video use case; zaustavljanje snimanja ostaje moguće tijekom aktivnog zapisa.
+- **Panorama / Dual / izmjena prednje kamere:** različiti gumbi imaju odgovarajuće pristupačne nazive; pri promjeni objektiva gasi se bljeskalica.
+- **CameraX lifecycle:** pri rebindu i izlasku s kamere čiste se reference stare instance, što sprječava pokušaj snimanja putem neaktivnog use casea.
+- Dodani su JVM testovi dostupnosti okidača i stvarnih raspona zoom kontrola. OEM CameraX testovi i pravi screenshot pixel-diff ostaju obvezni prije potvrde potpunog 1:1.

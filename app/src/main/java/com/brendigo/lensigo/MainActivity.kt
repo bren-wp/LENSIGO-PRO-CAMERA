@@ -327,6 +327,9 @@ private fun LensigoApplication() {
                         if (dualStep == 1) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
                         else if (front) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
                     val recordingMode = mode == CameraMode.VIDEO
+                    activeCamera = null
+                    photoCapture = null
+                    videoCapture = null
                     selfieCapture = null
                     concurrentDual = false
                     fun onBound(camera: Camera, manufacturerExtension: Boolean) {
@@ -343,6 +346,7 @@ private fun LensigoApplication() {
                         zoomMin = z?.minZoomRatio ?: 1f
                         zoomMax = z?.maxZoomRatio ?: 1f
                         currentZoom = z?.zoomRatio ?: 1f
+                        if (!camera.cameraInfo.hasFlashUnit()) flash = false
                     }
                     if (recordingMode) {
                         val preferred = if (preferSD) Quality.SD else Quality.HD
@@ -448,6 +452,11 @@ private fun LensigoApplication() {
             onDispose {
                 disposed = true
                 if (future.isDone) try { future.get().unbindAll() } catch (_: Exception) {}
+                activeCamera = null
+                photoCapture = null
+                videoCapture = null
+                selfieCapture = null
+                concurrentDual = false
             }
         }
     }
@@ -460,8 +469,12 @@ private fun LensigoApplication() {
         }
     }
     LaunchedEffect(previewView, flash, mode, activeCamera) {
-        photoCapture?.flashMode = if (flash) ImageCapture.FLASH_MODE_ON else ImageCapture.FLASH_MODE_OFF
-        activeCamera?.cameraControl?.enableTorch(flash && mode == CameraMode.VIDEO)
+        val hasFlash = activeCamera?.cameraInfo?.hasFlashUnit() == true
+        photoCapture?.flashMode = if (flash && hasFlash) ImageCapture.FLASH_MODE_ON
+            else ImageCapture.FLASH_MODE_OFF
+        if (hasFlash) {
+            activeCamera?.cameraControl?.enableTorch(flash && mode == CameraMode.VIDEO)
+        }
     }
     LaunchedEffect(previewView, look, mode) {
         val view = previewView ?: return@LaunchedEffect
@@ -815,12 +828,14 @@ private fun LensigoApplication() {
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = {
-                            if (activeCamera?.cameraInfo?.hasFlashUnit() == true) flash = !flash
-                            else Toast.makeText(context, "Ova kamera nema bljeskalicu", Toast.LENGTH_SHORT).show()
-                        }) {
+                        val flashAvailable = activeCamera?.cameraInfo?.hasFlashUnit() == true
+                        IconButton(
+                            onClick = { flash = !flash },
+                            enabled = flashAvailable && !processing
+                        ) {
                             Icon(if (flash) Icons.Default.FlashOn else Icons.Default.FlashOff,
-                                "Bljeskalica", tint = White)
+                                "Bljeskalica",
+                                tint = if (flashAvailable) White else Muted)
                         }
                         Text(when(mode) {
                             CameraMode.VIDEO -> if (preferSD) "SD" else "HD"
@@ -850,19 +865,24 @@ private fun LensigoApplication() {
                             })
                         Text(if (aspectWide) "16:9" else "4:3",
                             color = White, fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.clickable {
-                                if (!isRecording) {
-                                    aspectWide = !aspectWide
-                                    if (mode != CameraMode.VIDEO) {
-                                        photoAspectWide = aspectWide
-                                    }
-                                    prefs.edit().putBoolean(
-                                        if (mode == CameraMode.VIDEO) "video_aspect_wide"
-                                        else "photo_aspect_wide", aspectWide
-                                    ).apply()
+                            modifier = Modifier.clickable(
+                                enabled = !isRecording && !processing,
+                                role = Role.Button,
+                                onClickLabel = "Promijeni omjer slike"
+                            ) {
+                                aspectWide = !aspectWide
+                                if (mode != CameraMode.VIDEO) {
+                                    photoAspectWide = aspectWide
                                 }
+                                prefs.edit().putBoolean(
+                                    if (mode == CameraMode.VIDEO) "video_aspect_wide"
+                                    else "photo_aspect_wide", aspectWide
+                                ).apply()
                             })
-                        IconButton(onClick = { moveTo(Screen.SETTINGS) }) {
+                        IconButton(
+                            onClick = { moveTo(Screen.SETTINGS) },
+                            enabled = !isRecording && !processing
+                        ) {
                             Icon(Icons.Default.Settings, "Postavke", tint = White)
                         }
                     }
@@ -994,16 +1014,31 @@ private fun LensigoApplication() {
                             horizontalArrangement = Arrangement.spacedBy(6.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            listOf(.6f, 1f, 2f, 5f).filter { it >= zoomMin - .01f && it <= zoomMax + .01f }
-                                .forEach { ratio ->
+                            CameraControlRules.zoomPresets(zoomMin, zoomMax).forEach { ratio ->
                                     val selected = kotlin.math.abs(currentZoom - ratio) < .15f
                                     Box(Modifier.size(width = 48.dp, height = 34.dp)
                                         .background(if (selected) Cyan else Color.Transparent, CircleShape)
-                                        .clickable {
-                                            activeCamera?.cameraControl?.setZoomRatio(ratio)
-                                            currentZoom = ratio
+                                        .clickable(
+                                            enabled = activeCamera != null && !processing,
+                                            role = Role.Button,
+                                            onClickLabel = "Zumiraj na " + CameraControlRules.zoomLabel(ratio)
+                                        ) {
+                                            val camera = activeCamera
+                                            if (camera != null) {
+                                                val request = camera.cameraControl.setZoomRatio(ratio)
+                                                request.addListener({
+                                                    try {
+                                                        request.get()
+                                                        currentZoom = camera.cameraInfo.zoomState.value
+                                                            ?.zoomRatio ?: ratio
+                                                    } catch (_: Exception) {
+                                                        Toast.makeText(context, "Zumiranje nije dostupno",
+                                                            Toast.LENGTH_SHORT).show()
+                                                    }
+                                                }, ContextCompat.getMainExecutor(context))
+                                            }
                                         }, contentAlignment = Alignment.Center) {
-                                        Text(if (ratio == .6f) "0.6" else ratio.toInt().toString() + "x",
+                                        Text(CameraControlRules.zoomLabel(ratio),
                                             color = if (selected) Black else White,
                                             fontWeight = FontWeight.SemiBold, fontSize = 13.sp)
                                     }
@@ -1039,7 +1074,11 @@ private fun LensigoApplication() {
                             Text(item.title, fontSize = 13.sp,
                                 fontWeight = if (mode == item) FontWeight.Bold else FontWeight.Normal,
                                 color = if (mode == item) Cyan else Muted,
-                                modifier = Modifier.clickable { setMode(item) })
+                                modifier = Modifier.clickable(
+                                    enabled = !isRecording && !processing,
+                                    role = Role.Button,
+                                    onClickLabel = "Odaberi način " + item.title
+                                ) { setMode(item) })
                         }
                     }
                     Row(Modifier.fillMaxWidth().height(115.dp).background(Black)
@@ -1047,7 +1086,9 @@ private fun LensigoApplication() {
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
-                        IconButton(onClick = ::openFromCamera, modifier = Modifier.size(54.dp)) {
+                        IconButton(onClick = ::openFromCamera,
+                            enabled = !isRecording && !processing,
+                            modifier = Modifier.size(54.dp)) {
                             val thumb = lastPhotoThumbnail
                             if (thumb != null) {
                                 Image(
@@ -1065,7 +1106,12 @@ private fun LensigoApplication() {
                         Box(Modifier.size(78.dp).border(3.dp, White, CircleShape).padding(6.dp)
                             .background(if (mode == CameraMode.VIDEO) Color(0xFFEB3D43) else White, CircleShape)
                             .clickable(
-                                enabled = !processing && countdown == 0 && hasCameraPermission,
+                                enabled = CameraControlRules.shutterEnabled(
+                                    hasCameraPermission, processing, countdown,
+                                    mode == CameraMode.VIDEO, isRecording,
+                                    if (mode == CameraMode.VIDEO)
+                                        videoCapture != null else photoCapture != null
+                                ),
                                 role = Role.Button,
                                 onClickLabel = if (mode == CameraMode.VIDEO) {
                                     if (isRecording) "Zaustavi snimanje" else "Pokreni snimanje"
@@ -1079,23 +1125,28 @@ private fun LensigoApplication() {
                                 color = Black, strokeWidth = 3.dp)
                         }
                         IconButton(onClick = {
-                            if (!isRecording && !processing) when (mode) {
+                            when (mode) {
                                 CameraMode.PANORAMA -> {
                                     panoramaParts.forEach { it.delete() }
                                     panoramaParts.clear()
                                 }
-                                CameraMode.DUAL -> {
-                                    pipOnLeft = !pipOnLeft
+                                CameraMode.DUAL -> pipOnLeft = !pipOnLeft
+                                else -> {
+                                    flash = false
+                                    front = !front
                                 }
-                                else -> front = !front
                             }
-                        }, modifier = Modifier.size(54.dp)) {
+                        }, enabled = !isRecording && !processing,
+                            modifier = Modifier.size(54.dp)) {
                             Icon(when (mode) {
                                 CameraMode.PANORAMA -> Icons.Default.RestartAlt
                                 CameraMode.DUAL -> Icons.Default.FlipCameraAndroid
                                 else -> Icons.Default.Cameraswitch
-                            }, "Promijeni prikaz", tint = White,
-                                modifier = Modifier.size(31.dp))
+                            }, when (mode) {
+                                CameraMode.PANORAMA -> "Ponovi panoramu"
+                                CameraMode.DUAL -> "Premjesti prednji pregled"
+                                else -> "Promijeni kameru"
+                            }, tint = White, modifier = Modifier.size(31.dp))
                         }
                     }
                 }
