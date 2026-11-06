@@ -21,7 +21,7 @@ class CameraModeOrderTest {
         assertEquals(
             listOf(CameraMode.DUAL, CameraMode.FILTERS, CameraMode.VIDEO,
                 CameraMode.PHOTO, CameraMode.PRO),
-            cameraModeStrip.take(5)
+            cameraModeStrip.drop(cameraModeScrollIndex(CameraMode.VIDEO)).take(5)
         )
     }
 
@@ -30,8 +30,30 @@ class CameraModeOrderTest {
         assertEquals(
             listOf(CameraMode.FILTERS, CameraMode.VIDEO, CameraMode.PHOTO,
                 CameraMode.PRO, CameraMode.NIGHT),
-            cameraModeStrip.drop(1).take(5)
+            cameraModeStrip.drop(cameraModeScrollIndex(CameraMode.PHOTO)).take(5)
         )
+    }
+
+    @Test
+    fun panoramaAndDualReferencesShowWrappedModeNeighbors() {
+        assertEquals(
+            listOf(CameraMode.NIGHT, CameraMode.PORTRAIT, CameraMode.PANORAMA,
+                CameraMode.DUAL, CameraMode.FILTERS),
+            cameraModeStrip.drop(cameraModeScrollIndex(CameraMode.PANORAMA)).take(5)
+        )
+        assertEquals(
+            listOf(CameraMode.PORTRAIT, CameraMode.PANORAMA, CameraMode.DUAL,
+                CameraMode.FILTERS, CameraMode.VIDEO),
+            cameraModeStrip.drop(cameraModeScrollIndex(CameraMode.DUAL)).take(5)
+        )
+    }
+
+    @Test
+    fun everyModeHasFiveVisibleNeighbors() {
+        CameraMode.entries.forEach { mode ->
+            assertEquals(5, cameraModeStrip.drop(cameraModeScrollIndex(mode)).take(5).size)
+            assertTrue(cameraModeStrip.drop(cameraModeScrollIndex(mode)).take(5).contains(mode))
+        }
     }
 
     @Test

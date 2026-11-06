@@ -270,3 +270,16 @@ Uvedena je zajednička izvorno izmjerena `LensigoReferenceBackground` gradijentn
 - Traka zato sada koristi krajnje duplicirane navigacijske stavke, dok svaki **stvarni CameraMode ostaje jedan jedinstven način rada**. Dodani su JUnit testovi za oba izvorna redoslijeda i svih osam načina.
 - U izvornim mockupovima `assets/photo.jpg` već sadrži nacrtanu veliku traku zooma; `assets/video.jpg` već ima fiksni crveni brojač 00:00:12. To su grafički dijelovi *referentnih fotografija*, ne stvarno funkcionirajuće kontrole. Aplikacija namjerno prikazuje jedan stvarni CameraX zoom i stvarno vrijeme snimanja, bez dupliciranja zaostalih elemenata u prikazu kamere.
 - Referentne PNG datoteke još nisu uspoređene sa snimkama stvarne aplikacije na emulatoru; 1:1 ostaje neprovjereno.
+
+## 05–12 — kružna vizualna traka načina rada, izvorna usporedba
+
+Provedena je dodatna provjera `05_photo.png`, `06_video.png`, `10_panorama.png` i `11_dual.png` iz originalnog mobilnog ZIP-a. Svaki ekran prikazuje središnji aktivni način s dva lijeva i dva desna susjeda:
+
+- FOTO: FILTERI — VIDEO — **FOTO** — PRO — NOĆ.
+- VIDEO: DUAL — FILTERI — **VIDEO** — FOTO — PRO.
+- PANORAMA: NOĆ — PORTRET — **PANORAMA** — DUAL — FILTERI.
+- DUAL: PORTRET — PANORAMA — **DUAL** — FILTERI — VIDEO.
+
+Traka sada ponavlja samo rubne vizualne stavke radi kružnog prikaza i pamti za PANORAMA/DUAL posljednju pojavu u listi, dok svih osam stvarnih CameraX načina ostaje jedinstveno. JUnit provjere obuhvaćaju četiri izvorna prikaza i dostupnost pet oznaka za svaki od osam načina.
+
+Izvorna pozadinska fotografija `assets/photo.jpg` već sadrži statički nacrtanu veliku zoom traku, a `assets/video.jpg` fiksni mjerač 00:00:12. Aplikacija ne treba duplicirati takve kompozitne dekoracije pri stvarnom snimanju; izvještaj uspoređuje samo stvarne UI slojeve i hardverske kontrole. Stvarna 1:1 usporedba s Android screenshotovima još nije izvršena.

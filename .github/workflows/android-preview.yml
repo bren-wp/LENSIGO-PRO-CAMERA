@@ -70,7 +70,7 @@ jobs:
               if gh release upload "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --clobber; then
                 exit 0
               fi
-            elif gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO $TAG: Camera 05 Photo and 06 Video mode strip now mirrors the visible original sequence: FILTERI/VIDEO/FOTO/PRO/NOC in Photo and DUAL/FILTERI/VIDEO/FOTO/PRO in Video. UI wraps the edge labels for navigation but preserves eight real camera modes, with regression unit tests. Source assets photo.jpg and video.jpg contain pre-rendered mock zoom/timer graphics; the live app deliberately uses only real CameraX zoom and elapsed recording time. Earlier Splash/Home/Permissions measurements preserved. Screenshot pixel-exact verification on device pending. APK debug-signed, AAB unsigned."; then
+            elif gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO $TAG: Camera photo/video/panorama/dual mode strip now correctly wraps all eight live CameraX modes with two visible labels on each side; four reference sequences tested in JUnit, and every mode remains reachable. Source assets contain pre-rendered zoom/time graphic artifacts; the app uses only real sensor and recording UI. Earlier responsive Home and on-boarding changes remain. Pixel-perfect screenshots still require emulator comparison. APK debug-signed; AAB unsigned."; then
               exit 0
             fi
             if [ "$attempt" -eq 4 ]; then
