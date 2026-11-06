@@ -30,18 +30,32 @@ object MediaLibrary {
             val date = MediaStore.MediaColumns.DATE_ADDED
             val name = MediaStore.MediaColumns.DISPLAY_NAME
             val projection = arrayOf(MediaStore.MediaColumns._ID, date, name)
+            val relativeDirectory = if (video) "Movies/LENSIGO/" else "Pictures/LENSIGO/"
+            val where = if (Build.VERSION.SDK_INT >= 29)
+                name + " LIKE ? AND " + MediaStore.MediaColumns.RELATIVE_PATH + " = ?"
+                else name + " LIKE ?"
+            val args = if (Build.VERSION.SDK_INT >= 29)
+                arrayOf("LENSIGO_%", relativeDirectory) else arrayOf("LENSIGO_%")
             try {
                 context.contentResolver.query(source, projection,
-                    name + " LIKE ?", arrayOf("LENSIGO_%"), date + " DESC")
+                    where, args, date + " DESC")
                     ?.use { cursor ->
                         val id = cursor.getColumnIndexOrThrow(MediaStore.MediaColumns._ID)
                         val time = cursor.getColumnIndexOrThrow(date)
+                        val display = cursor.getColumnIndexOrThrow(name)
                         while (cursor.moveToNext()) {
-                            result.add(LensMedia(ContentUris.withAppendedId(source, cursor.getLong(id)),
-                                video, cursor.getLong(time)))
+                            // LIKE treats '_' as a wildcard, so verify the literal prefix.
+                            val filename = cursor.getString(display) ?: continue
+                            if (!filename.startsWith("LENSIGO_")) continue
+                            result.add(LensMedia(
+                                ContentUris.withAppendedId(source, cursor.getLong(id)),
+                                video, cursor.getLong(time)
+                            ))
                         }
                     }
-            } catch (_: SecurityException) { /* Permission denied: show owned items only. */ }
+            } catch (_: SecurityException) {
+                // Media items not visible to this app are never requested by broad read access.
+            }
         }
         return result.sortedByDescending { it.timestamp }
     }
@@ -58,8 +72,22 @@ object MediaLibrary {
             } catch (_: Exception) { null } finally { retriever.release() }
         }
         return try {
-            context.contentResolver.openInputStream(item.uri)?.use { stream ->
-                BitmapFactory.decodeStream(stream, null, BitmapFactory.Options().apply { inSampleSize = 4 })
+            val resolver = context.contentResolver
+            val bounds = BitmapFactory.Options().apply { inJustDecodeBounds = true }
+            resolver.openInputStream(item.uri)?.use {
+                BitmapFactory.decodeStream(it, null, bounds)
+            }
+            var sample = 1
+            val maxEdge = size.coerceIn(96, 512)
+            while (kotlin.math.max(bounds.outWidth, bounds.outHeight) / sample > maxEdge * 2) {
+                sample *= 2
+            }
+            resolver.openInputStream(item.uri)?.use { stream ->
+                BitmapFactory.decodeStream(stream, null,
+                    BitmapFactory.Options().apply {
+                        inSampleSize = sample
+                        inPreferredConfig = Bitmap.Config.RGB_565
+                    })
             }
         } catch (_: Exception) { null }
     }

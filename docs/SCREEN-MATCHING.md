@@ -24,8 +24,8 @@ Rekonstrukcija se izrađuje u Jetpack Compose; screenshotovi koncepta nisu stvar
 | 15_editor.png | Uređivač | Svjetlina, kontrast, obrezivanje središta, 12 filtera, rotacija, spremanje | Implementirano, 1:1 nije potvrđeno |
 | 16_settings.png | Postavke | JPEG, lokalna obrada, SD video, mreža, timer i opcionalni zvuk | Implementirano, 1:1 nije potvrđeno |
 | 17_camera-settings.png | Kamera postavke | Zaseban ekran JPEG, mreža i video kvaliteta | Implementirano djelomično, 1:1 nije potvrđeno |
-| 18_privacy.png | Privatnost | Lokalni opis dozvola | Funkcionalno |
-| 19_about.png | O aplikaciji | Brending i verzija | Funkcionalno |
+| 18_privacy.png | Privatnost | Brendirana četiri retka, simbol, informativni panel i otvaranje Android dozvola | Implementirano; 1:1 nije potvrđeno |
+| 19_about.png | O aplikaciji | Simbol i wordmark, naziv, web-stranica, licence, privatnost i stvarna verzija | Implementirano; 1:1 nije potvrđeno |
 
 ## Redoslijed dorade
 
@@ -78,3 +78,9 @@ U ovom izdanju postoji odgovarajuća navigacija i funkcionalni alati, ali **još
 ## Originalni 512px launch icon — 0.5.x
 
 Ponovno je upotrijebljen originalni Python/CairoSVG generator iz referentnog Brendigo paketa. Izlaz ima identičan RGB sadržaj kao `01_ikona_512x512.png` (512×512, SHA-256 rasterskih piksela `96538ced13ae75393f3feed7a06866a5d9f72f59e35d359c10dc67cca958e2df`). GitHub Action provjerava identitet prije pakiranja. To **ne potvrđuje** vidljivu 1:1 ikonu na svim Android launcherima jer sustav može promijeniti masku, skaliranje i rubove.
+
+## 18 Privatnost / 19 O aplikaciji — implementacija 0.6.0
+
+Uspoređene su korisnikove mobilne reference 1080 × 2400. Dodani su odgovarajući tamnoplavi layout, bijela tipografija, cijan simbol objektiva i grupirane informacije. Na zaslonu privatnosti četiri su reda i informativni panel; na zaslonu O aplikaciji četiri su informacije, aktivni navigacijski redovi i oznaka Brendigo. Za razliku od statičnih mockupova, poveznice otvaraju stvarne stranice ili Android dozvole. Dodana je zasebna stranica licenci.
+
+UI je responzivan kroz Compose `widthIn(max=540.dp)`, okomito pomicanje i `heightIn`, no **vizualno 1:1 nije potvrđeno** bez stvarnih snimki aplikacije na telefonu i tabletu. Izvorna 512×512 launcher slika reproducira se RGB-piksel-po-piksel; Android maskiranje može promijeniti prikaz ikone na početnom zaslonu.

@@ -72,10 +72,13 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Job
 import kotlinx.coroutines.withContext
 import java.io.File
 import java.util.Locale
@@ -133,6 +136,7 @@ private fun LensigoApplication() {
     var gridEnabled by remember { mutableStateOf(prefs.getBoolean("grid", true)) }
     var timerSeconds by remember { mutableIntStateOf(prefs.getInt("timer", 0)) }
     var countdown by remember { mutableIntStateOf(0) }
+    var shutterTimer: Job? by remember { mutableStateOf<Job?>(null) }
     var shutterSound by remember { mutableStateOf(prefs.getBoolean("shutter_sound", false)) }
     val sound = remember { MediaActionSound() }
     DisposableEffect(Unit) { onDispose { sound.release() } }
@@ -149,6 +153,23 @@ private fun LensigoApplication() {
     }
     var hasMicPermission by remember {
         mutableStateOf(ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED)
+    }
+    // Re-check permissions if the user changes them in Android system settings.
+    DisposableEffect(lifecycle) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                hasCameraPermission = ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
+                hasMicPermission = ContextCompat.checkSelfPermission(
+                    context, Manifest.permission.RECORD_AUDIO) == PackageManager.PERMISSION_GRANTED
+                hasStoragePermission = Build.VERSION.SDK_INT >= 29 ||
+                    ContextCompat.checkSelfPermission(
+                        context, Manifest.permission.WRITE_EXTERNAL_STORAGE
+                    ) == PackageManager.PERMISSION_GRANTED
+            }
+        }
+        lifecycle.lifecycle.addObserver(observer)
+        onDispose { lifecycle.lifecycle.removeObserver(observer) }
     }
     val requestCamera = rememberLauncherForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         hasCameraPermission = ContextCompat.checkSelfPermission(context, Manifest.permission.CAMERA) == PackageManager.PERMISSION_GRANTED
@@ -186,7 +207,10 @@ private fun LensigoApplication() {
     var lastPhoto by remember { mutableStateOf<Uri?>(null) }
     var activeMedia by remember { mutableStateOf<LensMedia?>(null) }
     val currentRecording by rememberUpdatedState(recording)
-    DisposableEffect(Unit) { onDispose { currentRecording?.stop() } }
+    DisposableEffect(Unit) { onDispose {
+        shutterTimer?.cancel()
+        currentRecording?.stop()
+    } }
 
     val look = PhotoLook(
         filter = if (mode == CameraMode.FILTERS) filter else LensFilter.ORIGINAL,
@@ -369,7 +393,12 @@ private fun LensigoApplication() {
     }
     fun setMode(next: CameraMode) {
         if (isRecording || processing) return
-        if (mode != next) clearTemporaryCaptures()
+        if (mode != next) {
+            shutterTimer?.cancel()
+            shutterTimer = null
+            countdown = 0
+            clearTemporaryCaptures()
+        }
         mode = next
         brightness = 0f; contrast = 1f; saturation = 1f
         flash = false
@@ -560,24 +589,53 @@ private fun LensigoApplication() {
             }
         }
         if (timerSeconds == 0) take()
-        else scope.launch {
-            for (remaining in timerSeconds downTo 1) {
-                countdown = remaining
-                delay(1000)
+        else {
+            shutterTimer?.cancel()
+            shutterTimer = scope.launch {
+                try {
+                    for (remaining in timerSeconds downTo 1) {
+                        countdown = remaining
+                        delay(1000)
+                    }
+                    countdown = 0
+                    if (screen == Screen.CAMERA) take()
+                } finally {
+                    countdown = 0
+                    shutterTimer = null
+                }
             }
-            countdown = 0
-            take()
         }
     }
     fun openFromCamera() {
         if (isRecording || processing) return
+        shutterTimer?.cancel()
+        shutterTimer = null
+        countdown = 0
         clearTemporaryCaptures()
         screen = Screen.GALLERY
     }
     fun moveTo(next: Screen) {
         if (isRecording || processing) return
+        if (screen != next) {
+            shutterTimer?.cancel()
+            shutterTimer = null
+            countdown = 0
+        }
         if (next != Screen.CAMERA) clearTemporaryCaptures()
         screen = next
+    }
+    BackHandler(enabled = screen !in setOf(
+        Screen.CAMERA, Screen.SPLASH, Screen.WELCOME, Screen.PERMISSIONS
+    ) && !isRecording && !processing) {
+        when (screen) {
+            Screen.HOME, Screen.GALLERY, Screen.SETTINGS -> moveTo(Screen.CAMERA)
+            Screen.VIEWER -> moveTo(Screen.GALLERY)
+            Screen.CAMERA_SETTINGS -> moveTo(Screen.SETTINGS)
+            Screen.PRIVACY -> moveTo(privacyReturnScreen)
+            Screen.ABOUT -> moveTo(Screen.SETTINGS)
+            Screen.LICENCES -> moveTo(Screen.ABOUT)
+            else -> Unit
+        }
     }
 
     MaterialTheme(colorScheme = darkColorScheme(
