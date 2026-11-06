@@ -173,7 +173,7 @@ fun LensigoAboutScreen(
                     fontSize = 12.sp)
                 Spacer(Modifier.height(44.dp))
                 InfoGroup {
-                    InfoLine(Icons.Default.InfoOutline, "Naziv aplikacije",
+                    InfoLine(Icons.Default.Info, "Naziv aplikacije",
                         "", detail = "LENSIGO")
                     ThinDivider()
                     InfoLine(Icons.Default.Public, "Web-stranica",

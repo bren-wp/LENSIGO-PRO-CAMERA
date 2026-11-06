@@ -11,9 +11,11 @@ import android.provider.MediaStore
 import android.net.Uri
 import android.widget.Toast
 import android.media.MediaActionSound
+import android.provider.Settings
 import android.view.View
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.AspectRatio
@@ -90,7 +92,7 @@ private val Blue = Color(0xFF2E83FF)
 private val Muted = Color(0xFF9DB5C4)
 private val White = Color(0xFFF7FCFF)
 
-private enum class Screen { SPLASH, WELCOME, PERMISSIONS, HOME, CAMERA, GALLERY, VIEWER, SETTINGS, CAMERA_SETTINGS, PRIVACY, ABOUT }
+private enum class Screen { SPLASH, WELCOME, PERMISSIONS, HOME, CAMERA, GALLERY, VIEWER, SETTINGS, CAMERA_SETTINGS, PRIVACY, ABOUT, LICENCES }
 private enum class CameraMode(val title: String) {
     VIDEO("VIDEO"), PHOTO("FOTO"), PRO("PRO"), NIGHT("NOĆ"),
     PORTRAIT("PORTRET"), PANORAMA("PANORAMA"), DUAL("DUAL"), FILTERS("FILTERI")
@@ -117,6 +119,7 @@ private fun LensigoApplication() {
         screen = if (prefs.getBoolean("onboarded", false)) Screen.CAMERA else Screen.WELCOME
     }
     var mode by remember { mutableStateOf(CameraMode.PHOTO) }
+    var privacyReturnScreen by remember { mutableStateOf(Screen.SETTINGS) }
     var front by remember { mutableStateOf(false) }
     var pipOnLeft by remember { mutableStateOf(false) }
     val modeListState = rememberLazyListState()
@@ -1010,7 +1013,10 @@ private fun LensigoApplication() {
                         Text(if (hasMicPermission) "Mikrofon dopušten" else "Dopusti mikrofon za video")
                     }
                     HorizontalDivider()
-                    TextButton(onClick = { moveTo(Screen.PRIVACY) }) { Text("Privatnost i dozvole") }
+                    TextButton(onClick = {
+                        privacyReturnScreen = Screen.SETTINGS
+                        moveTo(Screen.PRIVACY)
+                    }) { Text("Privatnost i dozvole") }
                     TextButton(onClick = { moveTo(Screen.ABOUT) }) { Text("O aplikaciji") }
                 }
                 Screen.CAMERA_SETTINGS -> PageScaffold("Postavke kamere",
@@ -1030,22 +1036,42 @@ private fun LensigoApplication() {
                         "HEIF, RAW i 4K/60 nisu ponuđeni jer nisu implementirani.",
                         color = Muted, fontSize = 13.sp)
                 }
-                Screen.PRIVACY -> PageScaffold("Privatnost", onBack = { moveTo(Screen.SETTINGS) }) {
-                    Text("LENSIGO obrađuje fotografije lokalno, bez slanja podataka na poslužitelj.",
-                        color = White)
-                    Text("Kamera je potrebna za fotografiranje, mikrofon samo za video sa zvukom. Na Androidu 7–9 za spremanje u javnu galeriju traži se dozvola za pohranu.",
-                        color = Muted)
-                    Text("Aplikacija nema INTERNET dozvolu, telemetriju ni korisničke račune.",
-                        color = Cyan)
-                }
-                Screen.ABOUT -> PageScaffold("O aplikaciji", onBack = { moveTo(Screen.SETTINGS) }) {
-                    Text("LENSIGO", color = White, fontSize = 31.sp, fontWeight = FontWeight.Bold)
-                    Text("PRO CAMERA · BY BRENDIGO", color = Cyan)
-                    Text("Svaki kadar. Tvoja priča.", color = Muted)
-                    Text("Verzija 0.4.0 · www.brendigo.com", color = White)
-                    Text("Fotografiranje, videosnimanje, lokalni filtri, podešavanje ekspozicije i galerija.",
-                        color = Muted)
-                }
+                Screen.PRIVACY -> LensigoPrivacyScreen(
+                    onBack = { moveTo(privacyReturnScreen) },
+                    onSettings = { moveTo(Screen.SETTINGS) },
+                    onPermissions = {
+                        val details = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                            Uri.fromParts("package", context.packageName, null))
+                        runCatching { context.startActivity(details) }
+                            .onFailure {
+                                Toast.makeText(context, "Postavke nisu dostupne",
+                                    Toast.LENGTH_SHORT).show()
+                            }
+                    }
+                )
+                Screen.ABOUT -> LensigoAboutScreen(
+                    version = BuildConfig.VERSION_NAME,
+                    onBack = { moveTo(Screen.SETTINGS) },
+                    onSettings = { moveTo(Screen.SETTINGS) },
+                    onPrivacy = {
+                        privacyReturnScreen = Screen.ABOUT
+                        moveTo(Screen.PRIVACY)
+                    },
+                    onLicences = { moveTo(Screen.LICENCES) },
+                    onWebsite = {
+                        runCatching {
+                            context.startActivity(Intent(Intent.ACTION_VIEW,
+                                Uri.parse("https://brendigo.com")))
+                        }.onFailure {
+                            Toast.makeText(context, "Preglednik nije dostupan",
+                                Toast.LENGTH_SHORT).show()
+                        }
+                    }
+                )
+                Screen.LICENCES -> LensigoLicencesScreen(
+                    onBack = { moveTo(Screen.ABOUT) },
+                    onSettings = { moveTo(Screen.SETTINGS) }
+                )
             }
         }
     }
