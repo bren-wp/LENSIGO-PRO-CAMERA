@@ -18,6 +18,8 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.camera.core.AspectRatio
 import androidx.camera.core.Camera
 import androidx.camera.core.CameraSelector
+import androidx.camera.core.ConcurrentCamera
+import androidx.camera.core.UseCaseGroup
 import androidx.camera.extensions.ExtensionsManager
 import androidx.camera.extensions.ExtensionMode
 import androidx.camera.core.ImageCapture
@@ -43,6 +45,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -83,10 +86,10 @@ private val Blue = Color(0xFF2E83FF)
 private val Muted = Color(0xFF9DB5C4)
 private val White = Color(0xFFF7FCFF)
 
-private enum class Screen { HOME, CAMERA, GALLERY, VIEWER, SETTINGS, PRIVACY, ABOUT }
+private enum class Screen { SPLASH, WELCOME, PERMISSIONS, HOME, CAMERA, GALLERY, VIEWER, SETTINGS, PRIVACY, ABOUT }
 private enum class CameraMode(val title: String) {
     VIDEO("VIDEO"), PHOTO("FOTO"), PRO("PRO"), NIGHT("NOĆ"),
-    PORTRAIT("PORTRET"), FILTERS("FILTERI")
+    PORTRAIT("PORTRET"), PANORAMA("PANORAMA"), DUAL("DUAL"), FILTERS("FILTERI")
 }
 
 class MainActivity : ComponentActivity() {
@@ -104,9 +107,16 @@ private fun LensigoApplication() {
     val lifecycle = LocalLifecycleOwner.current
     val scope = rememberCoroutineScope()
     val prefs = remember { context.getSharedPreferences("lensigo_preferences", 0) }
-    var screen by remember { mutableStateOf(Screen.CAMERA) }
+    var screen by remember { mutableStateOf(Screen.SPLASH) }
+    LaunchedEffect(Unit) {
+        delay(750)
+        screen = if (prefs.getBoolean("onboarded", false)) Screen.CAMERA else Screen.WELCOME
+    }
     var mode by remember { mutableStateOf(CameraMode.PHOTO) }
     var front by remember { mutableStateOf(false) }
+    var pipOnLeft by remember { mutableStateOf(false) }
+    val modeListState = rememberLazyListState()
+    LaunchedEffect(mode) { modeListState.animateScrollToItem((CameraMode.entries.indexOf(mode) - 2).coerceAtLeast(0)) }
     var aspectWide by remember { mutableStateOf(false) }
     var preferSD by remember { mutableStateOf(prefs.getBoolean("video_sd", true)) }
     var lowMemory by remember { mutableStateOf(prefs.getBoolean("low_memory", true)) }
@@ -146,8 +156,14 @@ private fun LensigoApplication() {
             arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
             else arrayOf(Manifest.permission.CAMERA))
     }
-    LaunchedEffect(Unit) { if (!hasCameraPermission) requestPermissions() }
+
     var previewView by remember { mutableStateOf<PreviewView?>(null) }
+    var selfieView by remember { mutableStateOf<PreviewView?>(null) }
+    var selfieCapture by remember { mutableStateOf<ImageCapture?>(null) }
+    var concurrentDual by remember { mutableStateOf(false) }
+    var dualStep by remember { mutableIntStateOf(0) }
+    var firstDualPhoto by remember { mutableStateOf<File?>(null) }
+    val panoramaParts = remember { mutableStateListOf<File>() }
     var activeCamera by remember { mutableStateOf<Camera?>(null) }
     var photoCapture by remember { mutableStateOf<ImageCapture?>(null) }
     var videoCapture by remember { mutableStateOf<VideoCapture<Recorder>?>(null) }
@@ -175,7 +191,7 @@ private fun LensigoApplication() {
         softenNoise = softenNoise, sharpen = sharpen,
         portraitBlur = if (mode == CameraMode.PORTRAIT && !vendorEffect) portraitBlur else 0f
     )
-    DisposableEffect(previewView, screen, front, mode, aspectWide, preferSD, hasCameraPermission) {
+    DisposableEffect(previewView, selfieView, screen, front, mode, aspectWide, preferSD, dualStep, hasCameraPermission) {
         val view = previewView
         if (view == null || screen != Screen.CAMERA || !hasCameraPermission) {
             onDispose { }
@@ -189,8 +205,12 @@ private fun LensigoApplication() {
                     val preview = Preview.Builder()
                         .setTargetAspectRatio(if (aspectWide) AspectRatio.RATIO_16_9 else AspectRatio.RATIO_4_3)
                         .build().also { it.surfaceProvider = view.surfaceProvider }
-                    val selector = if (front) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
+                    val selector = if (mode == CameraMode.DUAL)
+                        if (dualStep == 1) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
+                        else if (front) CameraSelector.DEFAULT_FRONT_CAMERA else CameraSelector.DEFAULT_BACK_CAMERA
                     val recordingMode = mode == CameraMode.VIDEO
+                    selfieCapture = null
+                    concurrentDual = false
                     fun onBound(camera: Camera, manufacturerExtension: Boolean) {
                         if (disposed) return
                         activeCamera = camera
@@ -229,7 +249,48 @@ private fun LensigoApplication() {
                             CameraMode.PORTRAIT -> ExtensionMode.BOKEH
                             else -> null
                         }
-                        if (ext == null) {
+                        val secondView = selfieView
+                        val compatiblePair = if (mode == CameraMode.DUAL && secondView != null &&
+                            dualStep == 0) {
+                            provider.availableConcurrentCameraInfos.firstOrNull { pair ->
+                                pair.size == 2 && pair.any {
+                                    it.lensFacing == CameraSelector.LENS_FACING_BACK
+                                } && pair.any { it.lensFacing == CameraSelector.LENS_FACING_FRONT }
+                            }
+                        } else null
+                        if (compatiblePair != null) {
+                            try {
+                                val backCamera = compatiblePair.first {
+                                    it.lensFacing == CameraSelector.LENS_FACING_BACK
+                                }
+                                val frontCamera = compatiblePair.first {
+                                    it.lensFacing == CameraSelector.LENS_FACING_FRONT
+                                }
+                                val secondPreview = Preview.Builder().build().also {
+                                    it.surfaceProvider = secondView!!.surfaceProvider
+                                }
+                                val selfieImage = ImageCapture.Builder().build()
+                                val backGroup = UseCaseGroup.Builder()
+                                    .addUseCase(preview).addUseCase(capture).build()
+                                val frontGroup = UseCaseGroup.Builder()
+                                    .addUseCase(secondPreview).addUseCase(selfieImage).build()
+                                val pair = provider.bindToLifecycle(
+                                    listOf(
+                                        ConcurrentCamera.SingleCameraConfig(
+                                            backCamera.cameraSelector, backGroup, lifecycle),
+                                        ConcurrentCamera.SingleCameraConfig(
+                                            frontCamera.cameraSelector, frontGroup, lifecycle)
+                                    )
+                                )
+                                selfieCapture = selfieImage
+                                concurrentDual = true
+                                onBound(pair.cameras.first(), false)
+                            } catch (_: Exception) {
+                                provider.unbindAll()
+                                onBound(provider.bindToLifecycle(
+                                    lifecycle, selector, preview, capture), false)
+                            }
+                        } else if (ext == null) {
                             onBound(provider.bindToLifecycle(lifecycle, selector, preview, capture), false)
                         } else {
                             // Vendor Night/Bokeh is optional; on incompatible hardware use
@@ -292,13 +353,121 @@ private fun LensigoApplication() {
             )
         }
     }
+    fun clearTemporaryCaptures() {
+        panoramaParts.forEach { it.delete() }
+        panoramaParts.clear()
+        firstDualPhoto?.delete()
+        firstDualPhoto = null
+        dualStep = 0
+    }
     fun setMode(next: CameraMode) {
         if (isRecording || processing) return
+        if (mode != next) clearTemporaryCaptures()
         mode = next
         brightness = 0f; contrast = 1f; saturation = 1f
         flash = false
         vendorEffect = false
         proValues = ProValues()
+    }
+    fun finishPanorama() {
+        if (processing || panoramaParts.size < PanoramaComposer.MIN_FRAMES) return
+        if (!hasStoragePermission) { requestPermissions(); return }
+        processing = true
+        val frames = panoramaParts.toList()
+        panoramaParts.clear()
+        scope.launch {
+            try {
+                lastPhoto = PanoramaComposer.save(context, frames, jpegQuality, lowMemory)
+                Toast.makeText(context, "Panorama spremljena", Toast.LENGTH_SHORT).show()
+            } catch (e: Exception) {
+                frames.forEach { it.delete() }
+                Toast.makeText(context, "Panorama nije uspjela: " + e.localizedMessage,
+                    Toast.LENGTH_LONG).show()
+            } finally { processing = false }
+        }
+    }
+    fun capturePanorama() {
+        if (processing || panoramaParts.size >= PanoramaComposer.MAX_FRAMES) return
+        if (!hasStoragePermission) { requestPermissions(); return }
+        val capture = photoCapture ?: return
+        processing = true
+        val file = File.createTempFile("lensigo_panorama_", ".jpg", context.cacheDir)
+        capture.takePicture(ImageCapture.OutputFileOptions.Builder(file).build(),
+            ContextCompat.getMainExecutor(context),
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(result: ImageCapture.OutputFileResults) {
+                    panoramaParts.add(file)
+                    processing = false
+                    if (panoramaParts.size == PanoramaComposer.MAX_FRAMES) finishPanorama()
+                }
+                override fun onError(error: ImageCaptureException) {
+                    file.delete()
+                    processing = false
+                    Toast.makeText(context, error.localizedMessage, Toast.LENGTH_LONG).show()
+                }
+            })
+    }
+    fun captureDual() {
+        if (processing || !hasCameraPermission) return
+        if (!hasStoragePermission) { requestPermissions(); return }
+        val capture = photoCapture ?: return
+        processing = true
+        val file = File.createTempFile("lensigo_dual_", ".jpg", context.cacheDir)
+        capture.takePicture(ImageCapture.OutputFileOptions.Builder(file).build(),
+            ContextCompat.getMainExecutor(context),
+            object : ImageCapture.OnImageSavedCallback {
+                override fun onImageSaved(result: ImageCapture.OutputFileResults) {
+                    if (!concurrentDual && dualStep == 0) {
+                        firstDualPhoto = file
+                        dualStep = 1
+                        processing = false
+                        Toast.makeText(context,
+                            "Stražnja snimka gotova. Snimi prednjom kamerom.",
+                            Toast.LENGTH_LONG).show()
+                        return
+                    }
+                    val frontCapture = if (concurrentDual) selfieCapture else null
+                    fun composite(back: File, front: File) {
+                        scope.launch {
+                            try {
+                                lastPhoto = DualComposer.save(context, back, front, jpegQuality,
+                                    lowMemory, pipOnLeft)
+                                Toast.makeText(context, "Dual fotografija spremljena",
+                                    Toast.LENGTH_SHORT).show()
+                            } catch (error: Exception) {
+                                Toast.makeText(context, "Dual neuspješan: " + error.localizedMessage,
+                                    Toast.LENGTH_LONG).show()
+                            } finally {
+                                back.delete(); front.delete()
+                                firstDualPhoto = null; dualStep = 0; processing = false
+                            }
+                        }
+                    }
+                    if (frontCapture != null) {
+                        val selfie = File.createTempFile("lensigo_selfie_", ".jpg", context.cacheDir)
+                        frontCapture.takePicture(ImageCapture.OutputFileOptions.Builder(selfie).build(),
+                            ContextCompat.getMainExecutor(context),
+                            object : ImageCapture.OnImageSavedCallback {
+                                override fun onImageSaved(result: ImageCapture.OutputFileResults) {
+                                    composite(file, selfie)
+                                }
+                                override fun onError(error: ImageCaptureException) {
+                                    file.delete(); selfie.delete(); processing = false
+                                    Toast.makeText(context, "Prednja kamera: " + error.message,
+                                        Toast.LENGTH_LONG).show()
+                                }
+                            })
+                    } else {
+                        val back = firstDualPhoto
+                        if (back == null) { file.delete(); processing = false; return }
+                        composite(back, file)
+                    }
+                }
+                override fun onError(error: ImageCaptureException) {
+                    file.delete(); processing = false
+                    Toast.makeText(context, "Dual: " + error.message, Toast.LENGTH_LONG).show()
+                }
+            })
     }
     fun capturePhoto() {
         if (processing) return
@@ -368,11 +537,13 @@ private fun LensigoApplication() {
         }
     }
     fun openFromCamera() {
-        if (isRecording) return
+        if (isRecording || processing) return
+        clearTemporaryCaptures()
         screen = Screen.GALLERY
     }
     fun moveTo(next: Screen) {
-        if (isRecording) return
+        if (isRecording || processing) return
+        if (next != Screen.CAMERA) clearTemporaryCaptures()
         screen = next
     }
 
@@ -382,6 +553,19 @@ private fun LensigoApplication() {
     )) {
         Box(Modifier.fillMaxSize().background(Black).windowInsetsPadding(WindowInsets.safeDrawing)) {
             when (screen) {
+                Screen.SPLASH -> LensigoSplash()
+                Screen.WELCOME -> LensigoWelcome { screen = Screen.PERMISSIONS }
+                Screen.PERMISSIONS -> LensigoPermissions(
+                    cameraGranted = hasCameraPermission,
+                    storageGranted = hasStoragePermission,
+                    micGranted = hasMicPermission,
+                    onCamera = ::requestPermissions,
+                    onMic = { requestMic.launch(Manifest.permission.RECORD_AUDIO) },
+                    onContinue = {
+                        prefs.edit().putBoolean("onboarded", true).apply()
+                        screen = Screen.HOME
+                    }
+                )
                 Screen.CAMERA -> Column(Modifier.fillMaxSize()) {
                     Row(
                         Modifier.fillMaxWidth().height(55.dp).background(Black)
@@ -432,7 +616,9 @@ private fun LensigoApplication() {
                                         FocusMeteringAction.Builder(point).build())
                                 }
                             })
-                            FocusCorners(Modifier.align(Alignment.Center).size(78.dp))
+                            if (mode != CameraMode.PANORAMA && mode != CameraMode.DUAL) {
+                                FocusCorners(Modifier.align(Alignment.Center).size(78.dp))
+                            }
                         } else {
                             Column(Modifier.align(Alignment.Center).padding(20.dp),
                                 horizontalAlignment = Alignment.CenterHorizontally) {
@@ -446,6 +632,23 @@ private fun LensigoApplication() {
                                 modifier = Modifier.clickable { moveTo(Screen.HOME) })
                             Spacer(Modifier.width(12.dp))
                             Text("PRO", color = Cyan, fontSize = 12.sp, fontWeight = FontWeight.Bold)
+                        }
+                        if (mode == CameraMode.PANORAMA) {
+                            PanoramaGuide(
+                                frameCount = panoramaParts.size,
+                                busy = processing,
+                                onFinish = ::finishPanorama,
+                                onCancel = {
+                                    panoramaParts.forEach { it.delete() }
+                                    panoramaParts.clear()
+                                }
+                            )
+                        }
+                        if (mode == CameraMode.DUAL) {
+                            DualPreview(
+                                step = dualStep, concurrent = concurrentDual,
+                                pipLeft = pipOnLeft, onView = { selfieView = it }
+                            )
                         }
                         if (mode == CameraMode.FILTERS) {
                             Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 76.dp)) {
@@ -564,6 +767,7 @@ private fun LensigoApplication() {
                     }
                     LazyRow(
                         Modifier.fillMaxWidth().height(51.dp).background(Black),
+                        state = modeListState,
                         horizontalArrangement = Arrangement.spacedBy(27.dp),
                         contentPadding = PaddingValues(horizontal = 32.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -587,16 +791,35 @@ private fun LensigoApplication() {
                         Box(Modifier.size(78.dp).border(3.dp, White, CircleShape).padding(6.dp)
                             .background(if (mode == CameraMode.VIDEO) Color(0xFFEB3D43) else White, CircleShape)
                             .clickable(enabled = !processing && hasCameraPermission) {
-                                if (mode == CameraMode.VIDEO) toggleRecording() else capturePhoto()
+                                when (mode) {
+                                    CameraMode.VIDEO -> toggleRecording()
+                                    CameraMode.PANORAMA -> capturePanorama()
+                                    CameraMode.DUAL -> captureDual()
+                                    else -> capturePhoto()
+                                }
                             }, contentAlignment = Alignment.Center) {
                             if (isRecording) Box(Modifier.size(26.dp)
                                 .background(White, RoundedCornerShape(6.dp)))
                             if (processing) CircularProgressIndicator(Modifier.size(26.dp),
                                 color = Black, strokeWidth = 3.dp)
                         }
-                        IconButton(onClick = { if (!isRecording && !processing) front = !front },
-                            modifier = Modifier.size(54.dp)) {
-                            Icon(Icons.Default.Cameraswitch, "Promijeni kameru", tint = White,
+                        IconButton(onClick = {
+                            if (!isRecording && !processing) when (mode) {
+                                CameraMode.PANORAMA -> {
+                                    panoramaParts.forEach { it.delete() }
+                                    panoramaParts.clear()
+                                }
+                                CameraMode.DUAL -> {
+                                    pipOnLeft = !pipOnLeft
+                                }
+                                else -> front = !front
+                            }
+                        }, modifier = Modifier.size(54.dp)) {
+                            Icon(when (mode) {
+                                CameraMode.PANORAMA -> Icons.Default.RestartAlt
+                                CameraMode.DUAL -> Icons.Default.FlipCameraAndroid
+                                else -> Icons.Default.Cameraswitch
+                            }, "Promijeni prikaz", tint = White,
                                 modifier = Modifier.size(31.dp))
                         }
                     }
@@ -611,13 +834,15 @@ private fun LensigoApplication() {
                         "✨  Filteri" to CameraMode.FILTERS,
                         "🌙  Noćni" to CameraMode.NIGHT,
                         "⚙️  Pro" to CameraMode.PRO,
-                        "👤  Portret" to CameraMode.PORTRAIT
+                        "👤  Portret" to CameraMode.PORTRAIT,
+                        "↔  Panorama" to CameraMode.PANORAMA,
+                        "▣  Dual" to CameraMode.DUAL
                     )
                     routes.forEach { (name, target) ->
                         Button(onClick = { setMode(target); moveTo(Screen.CAMERA) },
                             modifier = Modifier.fillMaxWidth()) { Text(name) }
                     }
-                    Text("Panorama i dual kamera planirani su za sljedeće faze. Portret koristi Bokeh uređaja ili označeni lokalni efekt.",
+                    Text("Panorama spaja 2–5 snimki uz ručno usmjeravanje. Dual koristi dvije kamere ako su dostupne, ili dva uzastopna kadra.",
                         color = Muted, fontSize = 13.sp)
                     Button(onClick = { moveTo(Screen.GALLERY) }, modifier = Modifier.fillMaxWidth()) {
                         Icon(Icons.Default.PhotoLibrary, null); Spacer(Modifier.width(8.dp))
@@ -671,7 +896,7 @@ private fun LensigoApplication() {
                     Text("LENSIGO", color = White, fontSize = 31.sp, fontWeight = FontWeight.Bold)
                     Text("PRO CAMERA · BY BRENDIGO", color = Cyan)
                     Text("Svaki kadar. Tvoja priča.", color = Muted)
-                    Text("Verzija 0.2.0 · www.brendigo.com", color = White)
+                    Text("Verzija 0.4.0 · www.brendigo.com", color = White)
                     Text("Fotografiranje, videosnimanje, lokalni filtri, podešavanje ekspozicije i galerija.",
                         color = Muted)
                 }

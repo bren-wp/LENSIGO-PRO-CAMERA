@@ -11,7 +11,8 @@
 - Real gallery and photo viewer/editor
 - Image capture controls and capability detection
 - Pro Camera2 ISO/shutter/manual focus (done with hardware gating; physical device validation pending)
-- Night/Portrait manufacturer extensions and local fallback (implemented, device validation pending); panorama and dual camera still planned
+- Night/Portrait manufacturer extensions and local fallback (implemented, device validation pending); guided panorama and dual stills (implemented, device tests pending)
+- Photometric/perspective automatic panorama alignment and concurrent video (not yet implemented)
 - Accessible responsive layouts and localized HR/EN strings
 - Signed production AAB/APK using secure CI secrets; tests and Play compliance
 

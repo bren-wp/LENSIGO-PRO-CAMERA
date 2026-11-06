@@ -114,4 +114,37 @@ object MediaLibrary {
                 saveImage(context, file, look, quality, lowMemory)
             } finally { file.delete() }
         }
+
+    /** Saves composed images atomically in MediaStore, with cleanup on any failure. */
+    fun saveBitmap(context: Context, image: Bitmap, prefix: String, quality: Int): Uri {
+        val values = ContentValues().apply {
+            put(MediaStore.MediaColumns.DISPLAY_NAME,
+                "LENSIGO_" + prefix + "_" + System.currentTimeMillis() + ".jpg")
+            put(MediaStore.MediaColumns.MIME_TYPE, "image/jpeg")
+            if (Build.VERSION.SDK_INT >= 29) {
+                put(MediaStore.MediaColumns.RELATIVE_PATH, "Pictures/LENSIGO")
+                put(MediaStore.MediaColumns.IS_PENDING, 1)
+            }
+        }
+        val resolver = context.contentResolver
+        val destination = resolver.insert(MediaStore.Images.Media.EXTERNAL_CONTENT_URI, values)
+            ?: throw IOException("Nije moguće otvoriti izlaznu fotografiju")
+        try {
+            resolver.openOutputStream(destination, "w")?.use { out ->
+                if (!image.compress(Bitmap.CompressFormat.JPEG,
+                        quality.coerceIn(70, 100), out)) {
+                    throw IOException("JPEG kodiranje nije uspjelo")
+                }
+            } ?: throw IOException("Nije moguće pisati izlaznu fotografiju")
+            if (Build.VERSION.SDK_INT >= 29) {
+                resolver.update(destination, ContentValues().apply {
+                    put(MediaStore.MediaColumns.IS_PENDING, 0)
+                }, null, null)
+            }
+            return destination
+        } catch (e: Exception) {
+            resolver.delete(destination, null, null)
+            throw e
+        }
+    }
 }

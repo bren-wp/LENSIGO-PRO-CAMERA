@@ -41,5 +41,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.3.${{ github.run_number }}"
-          gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO v0.3.0: PRO Camera2 manual ISO/shutter/WB/MF with capability detection, Night extension when device supports it, Portrait Bokeh extension with honest center-blur fallback, real portrait blur slider, 12 offline filters, improved low-RAM processing. Device-level and pixel-perfect screenshot tests pending. APK test-signed, AAB unsigned."
+          TAG="v0.4.${{ github.run_number }}"
+          gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO 0.4.0: Guided 2-5-frame panorama stitch, concurrent front/back dual preview where supported, sequential Dual fallback with one merged photo, branded splash/welcome/permissions, updated mode selection, 12 local filters. Device-level and pixel-perfect screenshot tests pending. APK test-signed; AAB unsigned."

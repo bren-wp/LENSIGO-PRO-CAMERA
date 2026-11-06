@@ -6,9 +6,9 @@
 
 ## 📷 Profesionalniji kadar — čak i na skromnijem telefonu
 
-LENSIGO je Brendigo Android kamera s jednostavnim sučeljem, lokalnim efektima i postavkama optimiziranima za slabije uređaje. Bez računa, oglasa, telemetrije ili internetske dozvole.
+LENSIGO je Brendigo Android kamera s jednostavnim sučeljem, lokalnim efektima i postavkama optimiziranima za slabije uređaje. Nova verzija donosi vođenu panoramu i Dual snimanje s provjerom stvarne podrške hardvera. Bez računa, oglasa, telemetrije ili internetske dozvole.
 
-### ✨ Stvarne mogućnosti u verziji 0.3.0
+### ✨ Stvarne mogućnosti u verziji 0.4.0
 
 | 📸 Foto | 🎞️ Video | 🎨 Filteri | 💡 Poboljšanja |
 |---|---|---|---|
@@ -16,7 +16,13 @@ LENSIGO je Brendigo Android kamera s jednostavnim sučeljem, lokalnim efektima i
 | 📁 Galerija | 🪄 Uređivanje | 📱 Kompatibilnost | 🔐 Privatnost |
 | Snimke kreirane aplikacijom | Svjetlina, kontrast, zasićenost, filtri i spremanje nove kopije | Android 7.0+, način ograničene memorije | MediaStore, lokalna obrada, bez cloud servisa |
 
-**Pro 0.3.0:** Ručni ISO, brzina zatvarača, WB i MF putem Camera2 podržani su samo kad hardver izloži odgovarajuće karakteristike; u suprotnom kontrole su onemogućene, uz EV kompenzaciju kada je dostupna. **Noć 0.3.0:** proizvođački Night dodatak kada je dostupan, inače lokalno posvjetljivanje. **Portret 0.3.0:** proizvođački Bokeh kada je dostupan, inače umjetničko zamućenje izvan središta kadra koje ne prepoznaje obris osobe.
+**Pro 0.4.0:** Ručni ISO, brzina zatvarača, WB i MF putem Camera2 podržani su samo kad hardver izloži odgovarajuće karakteristike; u suprotnom kontrole su onemogućene, uz EV kompenzaciju kada je dostupna. **Noć 0.4.0:** proizvođački Night dodatak kada je dostupan, inače lokalno posvjetljivanje. **Portret 0.4.0:** proizvođački Bokeh kada je dostupan, inače umjetničko zamućenje izvan središta kadra koje ne prepoznaje obris osobe.
+
+**Panorama 0.4.0:** 2–5 kadrova s vođenim pomicanjem udesno, lokalno spajanje s 28% preklapanja i spremanje JPEG-a. Jednostavno je ručno poravnanje, bez računalnog prepoznavanja značajki; treba mirno pomicati uređaj. Rezolucija i broj kadrova ograničeni su radi rada na slabijim telefonima.
+
+**Dual 0.4.0:** na telefonima s podrškom CameraX concurrent camera moguć je istodobni pregled prednje kamere u malom okviru iznad stražnje; dvije se fotografije snime redom i lokalno spoje u jednu. Na ostalim telefonima aplikacija jasno vodi kroz dva uzastopna kadra. Nema lažnog prikaza druge kamere. Dual video nije implementiran.
+
+**Pokretanje:** brendirani Splash → dobrodošlica → dozvole (samo prvo pokretanje) → početni zaslon; kasnije se kamera otvara odmah.
 
 **12 efekata:** Original · Vivid · Film · Mono · Warm · Cool · Vintage · Fade · Dramatic · Sepia · Noir · Sunset.
 
@@ -49,7 +55,7 @@ GitHub Actions nakon **uspješnog** builda objavljuje novi preview Release s `ap
 
 ### 🧭 Ostalo u planu
 
-Napredna segmentacija osobe u portretnom načinu, panorama, dual kamera, RAW/DNG, složenije postavke fokusa i višekadarski Night Mode za uređaje bez proizvođačkog dodatka i potpuni pixel-by-pixel audit 19 zaslona. Neaktivne funkcije nisu predstavljene kao gotove.
+Napredno panoramsko poravnanje, istodobno Dual video snimanje, segmentacija osobe u portretu, RAW/DNG, složenije postavke fokusa i višekadarski Night Mode za uređaje bez proizvođačkog dodatka i potpuni pixel-by-pixel audit 19 zaslona. Neaktivne funkcije nisu predstavljene kao gotove.
 
 ### 🔒 Privatnost i licenca
 
