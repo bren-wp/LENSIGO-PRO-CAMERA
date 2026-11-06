@@ -144,3 +144,9 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - The supplied `07_pro.png` has five lower dark cards (ISO, S, EV, WB, MF) and a white graduated ruler below. The native Compose overlay now uses 48dp minimum target height for manual controls and renders a 40-tick ruler, with a **cyan indicator linked to the actual selected manual value** (not a decorative fake needle).
 - Only genuine Camera2 manual-capability ranges are shown as usable. If the device does not support a control, that control remains disabled and gives honest feedback. The design mockup uses “RAW” and Kelvin values; the actual app currently captures JPEG and exposes available AWB modes, so neither RAW nor a Kelvin slider is falsely advertised.
 - Still needs emulator/physical screenshots and pixel-audit comparison on phone/tablet, accessibility reader and hardware capability checks. Added ruler is a fidelity improvement, not proof of a perfect 1:1 match.
+
+## 08 Night — source-driven uncluttered preview
+
+- The original `izvoz/mobitel/08_night.png` and tablet counterpart show the live image without an extra persistent footer label, and a standard zoom control just above the selected mode. The hardcoded footer text has been removed to restore usable preview height.
+- The existing real exposure compensation slider remains available on devices supporting EV, but is **collapsed by default** and toggled by tapping the accessible NOĆ header. When the OEM Night extension is active or EV unsupported, no non-functional slider is presented. The actual vendor-extension/local-processing decision remains unchanged.
+- Camera sensor content changes on each device; no claim is made that a live preview matches the static reference photograph. Device screenshots and extension fallback tests remain pending.

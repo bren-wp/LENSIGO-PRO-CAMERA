@@ -166,6 +166,8 @@ private fun LensigoApplication() {
     DisposableEffect(Unit) { onDispose { sound.release() } }
     var portraitBlur by remember { mutableFloatStateOf(.60f) }
     var vendorEffect by remember { mutableStateOf(false) }
+    var nightExposureExpanded by remember { mutableStateOf(false) }
+    LaunchedEffect(mode) { nightExposureExpanded = false }
     var proCapabilities by remember { mutableStateOf<ProCapabilities?>(null) }
     var proValues by remember { mutableStateOf(ProValues()) }
     var hasCameraPermission by remember {
@@ -754,10 +756,22 @@ private fun LensigoApplication() {
                             else -> "AUTO"
                         },
                             color = White, fontWeight = FontWeight.SemiBold,
-                            modifier = Modifier.clickable {
+                            modifier = Modifier.clickable(
+                                enabled = (mode == CameraMode.VIDEO && !isRecording) ||
+                                    (mode == CameraMode.NIGHT && !vendorEffect &&
+                                        exposureMax > exposureMin),
+                                role = Role.Button,
+                                onClickLabel = if (mode == CameraMode.NIGHT) {
+                                    if (nightExposureExpanded) "Sakrij ekspoziciju"
+                                    else "Podesi noćnu ekspoziciju"
+                                } else "Promijeni video kvalitetu"
+                            ) {
                                 if (mode == CameraMode.VIDEO && !isRecording) {
                                     preferSD = !preferSD
                                     prefs.edit().putBoolean("video_sd", preferSD).apply()
+                                } else if (mode == CameraMode.NIGHT && !vendorEffect &&
+                                    exposureMax > exposureMin) {
+                                    nightExposureExpanded = !nightExposureExpanded
                                 }
                             })
                         Text(if (aspectWide) "16:9" else "4:3",
@@ -875,15 +889,6 @@ private fun LensigoApplication() {
                                     modifier = Modifier.padding(horizontal = 23.dp).height(32.dp))
                             }
                         }
-                        if (mode == CameraMode.NIGHT) {
-                            Text(if (vendorEffect) "NOĆ · način proizvođača" else
-                                "NOĆ · lokalno posvjetljivanje", color = White,
-                                fontSize = 12.sp,
-                                modifier = Modifier.align(Alignment.BottomCenter)
-                                    .padding(bottom = 78.dp)
-                                    .background(Black.copy(alpha = .72f), RoundedCornerShape(12.dp))
-                                    .padding(9.dp))
-                        }
                         if (mode == CameraMode.PRO) {
                             ProControlOverlay(
                                 capabilities = proCapabilities, values = proValues,
@@ -948,7 +953,7 @@ private fun LensigoApplication() {
                                 }
                         }
                     }
-                    if (mode == CameraMode.NIGHT && !vendorEffect) {
+                    if (mode == CameraMode.NIGHT && !vendorEffect && nightExposureExpanded) {
                         val min = exposureMin
                         val max = exposureMax
                         if (max > min) {
