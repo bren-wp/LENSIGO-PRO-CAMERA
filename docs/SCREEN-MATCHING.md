@@ -181,3 +181,10 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - Reference Settings 16 contains Kamera, Privatnost i pohrana, Aplikacija panels. The real Android menu preserves this main hierarchy. Advanced noise/sharpen/low-memory controls remain **in the actual Camera Settings 17 screen**, rather than appearing in a duplicated extra panel on the main Settings page. The microphone permission remains available in Camera Settings.
 - Reference Camera Settings 17 includes an aspect ratio. Added a persisted real 4:3/16:9 still-photo preference, synced with the camera header and retained when switching between Photo and Video. JPEG quality, grid, SD/HD preference and all pre-existing real processing controls still operate.
 - The mockup's RAW/HEIF/4K60/HDR toggles were not inserted because the current CameraX capture pipeline has no verified implementation for them. Device-level screenshots and compatibility testing remain required.
+
+## 18 Privacy / 19 About — brand geometry, truthful info, licences
+
+- For mobile reference 18, Privacy headline, cyan LENSIGO aperture and first information card now follow the supplied vertical rhythm more closely. The logo is reduced from 100dp to 64dp, and card rows use 54dp accessible minimum heights; visual group outlines are added.
+- Reference 19's central brand block uses a smaller approximately 92dp mark, a 30sp LENSIGO wordmark and adjusted surrounding spacing. The real Android version from `BuildConfig.VERSION_NAME` remains shown instead of the reference mockup's conceptual developer messages.
+- The Licences screen now references the actual `github.com/bren-wp/Lensigo-PRO` and opens that URI via a real Android ACTION_VIEW intent. No network permission is added to the camera itself; the user-selected external browser handles opening it.
+- These are source-guided corrections. Neither 1080×2400 nor 1600×2560 real emulator screenshots have been compared yet, so 1:1 remains unverified.

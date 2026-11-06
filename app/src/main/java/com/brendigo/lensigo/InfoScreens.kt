@@ -1,7 +1,12 @@
 package com.brendigo.lensigo
 
+import android.content.Intent
+import android.net.Uri
+import android.widget.Toast
+
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -15,6 +20,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -54,7 +60,7 @@ private fun InfoLine(icon: ImageVector, title: String, caption: String,
     Row(
         Modifier.fillMaxWidth().then(
             if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier
-        ).heightIn(min = 69.dp).padding(horizontal = 13.dp, vertical = 11.dp),
+        ).heightIn(min = 54.dp).padding(horizontal = 13.dp, vertical = 10.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(icon, contentDescription = null, tint = Secondary,
@@ -75,7 +81,8 @@ private fun InfoLine(icon: ImageVector, title: String, caption: String,
 @Composable
 private fun InfoGroup(content: @Composable ColumnScope.() -> Unit) {
     Column(Modifier.fillMaxWidth()
-        .background(Surface, RoundedCornerShape(14.dp)), content = content)
+        .background(Surface, RoundedCornerShape(14.dp))
+        .border(1.dp, Line, RoundedCornerShape(14.dp)), content = content)
 }
 
 @Composable
@@ -98,10 +105,10 @@ fun LensigoPrivacyScreen(
                 Spacer(Modifier.height(26.dp))
                 Text("Tvoje snimke.\nTvoja pravila.", color = White,
                     fontSize = 27.sp, lineHeight = 30.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.height(30.dp))
-                LensigoBrandMark(modifier = Modifier.size(100.dp)
+                Spacer(Modifier.height(18.dp))
+                LensigoBrandMark(modifier = Modifier.size(64.dp)
                         .align(Alignment.CenterHorizontally))
-                Spacer(Modifier.height(14.dp))
+                Spacer(Modifier.height(10.dp))
                 Text("Privatnost prije svega", fontWeight = FontWeight.Bold,
                     fontSize = 20.sp, color = White, modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.Center)
@@ -155,10 +162,10 @@ fun LensigoAboutScreen(
             horizontalAlignment = Alignment.CenterHorizontally) {
             Column(Modifier.widthIn(max = 540.dp),
                 horizontalAlignment = Alignment.CenterHorizontally) {
-                Spacer(Modifier.height(52.dp))
-                LensigoBrandMark(modifier = Modifier.size(128.dp))
-                Spacer(Modifier.height(21.dp))
-                Text("LENSIGO", color = White, fontSize = 37.sp,
+                Spacer(Modifier.height(60.dp))
+                LensigoBrandMark(modifier = Modifier.size(92.dp))
+                Spacer(Modifier.height(16.dp))
+                Text("LENSIGO", color = White, fontSize = 30.sp,
                     fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                 Spacer(Modifier.height(4.dp))
                 Text("P R O   C A M E R A", color = Cyan,
@@ -195,6 +202,7 @@ fun LensigoAboutScreen(
 
 @Composable
 fun LensigoLicencesScreen(onBack: () -> Unit, onSettings: () -> Unit) {
+    val context = LocalContext.current
     Column(Modifier.fillMaxSize().background(Bg)) {
         InfoHeader("Licence i zahvale", onBack, onSettings)
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
@@ -208,8 +216,19 @@ fun LensigoLicencesScreen(onBack: () -> Unit, onSettings: () -> Unit) {
                 color = Secondary, fontSize = 13.sp, lineHeight = 19.sp)
             Text("Izvorni kod, korijenska licenca i ovisnosti:",
                 color = White, fontWeight = FontWeight.SemiBold)
-            Text("github.com/bren-wp/LENSIGO-PRO-CAMERA",
-                color = Cyan, fontSize = 13.sp)
+            Text(
+                "github.com/bren-wp/Lensigo-PRO",
+                color = Cyan, fontSize = 13.sp,
+                modifier = Modifier.clickable {
+                    runCatching {
+                        context.startActivity(Intent(Intent.ACTION_VIEW,
+                            Uri.parse("https://github.com/bren-wp/Lensigo-PRO")))
+                    }.onFailure {
+                        Toast.makeText(context, "Preglednik nije dostupan",
+                            Toast.LENGTH_SHORT).show()
+                    }
+                }
+            )
             Text("Slike i simbol LENSIGO nastali su za brend Brendigo. " +
                 "Licenca aplikacije ne mijenja licence uključenih biblioteka.",
                 color = Secondary, fontSize = 13.sp)
