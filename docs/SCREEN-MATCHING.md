@@ -74,3 +74,7 @@ Referentne slikovne datoteke `13_gallery.png` do `17_camera-settings.png` imaju:
 - postavke s vizualnim grupama; implementirane su samo stavke koje zaista mijenjaju ponašanje kamere
 
 U ovom izdanju postoji odgovarajuća navigacija i funkcionalni alati, ali **još nema potvrde 1:1**. Stvarna kamera i galerija s korisničkim slikama ne mogu se automatski smatrati istom statičnom scenom kao referentni mockup. Potrebne su realne snimke Android emulatora/uređaja za usporedbu koordinata, fontova, paddinga i boja.
+
+## Originalni 512px launch icon — 0.5.x
+
+Ponovno je upotrijebljen originalni Python/CairoSVG generator iz referentnog Brendigo paketa. Izlaz ima identičan RGB sadržaj kao `01_ikona_512x512.png` (512×512, SHA-256 rasterskih piksela `96538ced13ae75393f3feed7a06866a5d9f72f59e35d359c10dc67cca958e2df`). GitHub Action provjerava identitet prije pakiranja. To **ne potvrđuje** vidljivu 1:1 ikonu na svim Android launcherima jer sustav može promijeniti masku, skaliranje i rubove.

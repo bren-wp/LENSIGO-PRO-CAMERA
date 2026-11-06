@@ -40,6 +40,8 @@ Mreža trećina preko live previewa, samookidač 3/5/10 s i opcionalni zvuk okid
 
 <p align="center"><img src="branding/lensigo-icon.svg" alt="LENSIGO aperture" width="150"></p>
 
+**Launch ikona — izvorni pikseli:** GitHub Actions prije Gradle builda pokreće `tools/generate_launcher.py` i generira originalni 512 × 512 PNG u `drawable-nodpi/lensigo_launcher.png`. Izlaz je lokalno uspoređen s korisnikovom referencom i daje **identična 262.144 RGB piksela** (SHA-256 `96538ced13ae75393f3feed7a06866a5d9f72f59e35d359c10dc67cca958e2df`). Gradle build pada ako SHA nije točan. To potvrđuje izvorni sadržaj ikone, ne izgled Androidova maskiranja na različitim launcherima.
+
 **Graphite** `#081827` · **Midnight** `#10364C` · **Cyan** `#00D4FF` · **Blue** `#2E83FF` · **White** `#F5FAFF`.
 
 Svi zasloni koriste tamnu navigaciju i lokalni prikaz kamere. Galerija i uređivač u verziji 0.5.0 bliži su referencama, ali screenshot testovi tek trebaju potvrditi raspored i dimenzije. Za 1:1 provjeru svake referentne slike: [detaljna tablica implementacije i statusa](docs/SCREEN-MATCHING.md).
