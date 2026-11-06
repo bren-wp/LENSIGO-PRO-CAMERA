@@ -128,8 +128,7 @@ internal fun LensigoHomeScreen(
                     .heightIn(min = 77.dp).padding(horizontal = 17.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Image(painterResource(R.drawable.lensigo_symbol),
-                    "LENSIGO", modifier = Modifier.size(48.dp).clickable(onClick = onAbout))
+                LensigoBrandMark(Modifier.size(48.dp).clickable(onClick = onAbout))
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
                     Text("LENSIGO", color = White, fontSize = 27.sp,

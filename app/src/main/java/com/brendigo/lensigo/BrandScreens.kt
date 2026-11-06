@@ -35,8 +35,7 @@ fun LensigoSplash() {
             Modifier.align(Alignment.Center).offset(y = (-70).dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Image(painterResource(R.drawable.lensigo_symbol),
-                contentDescription = "LENSIGO", modifier = Modifier.size(134.dp))
+            LensigoBrandMark(modifier = Modifier.size(134.dp))
             Spacer(Modifier.height(13.dp))
             Text("LENSIGO", fontWeight = FontWeight.Bold, fontSize = 46.sp,
                 color = White, letterSpacing = 1.sp)
@@ -69,8 +68,7 @@ fun LensigoWelcome(onContinue: () -> Unit) {
             .border(1.dp, Color(0xFF2A779B), RoundedCornerShape(24.dp))
             .background(Color(0xFF0C2A40), RoundedCornerShape(24.dp)),
             contentAlignment = Alignment.Center) {
-            Image(painterResource(R.drawable.lensigo_symbol), "LENSIGO",
-                modifier = Modifier.size(154.dp))
+            LensigoBrandMark(modifier = Modifier.size(154.dp))
         }
         Spacer(Modifier.height(24.dp))
         Text("LENSIGO  ·  PRO CAMERA", fontSize = 13.sp, color = Accent)

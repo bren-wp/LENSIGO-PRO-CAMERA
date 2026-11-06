@@ -99,8 +99,7 @@ fun LensigoPrivacyScreen(
                 Text("Tvoje snimke.\nTvoja pravila.", color = White,
                     fontSize = 27.sp, lineHeight = 30.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(30.dp))
-                Image(painterResource(R.drawable.lensigo_symbol),
-                    "LENSIGO simbol objektiva", modifier = Modifier.size(100.dp)
+                LensigoBrandMark(modifier = Modifier.size(100.dp)
                         .align(Alignment.CenterHorizontally))
                 Spacer(Modifier.height(14.dp))
                 Text("Privatnost prije svega", fontWeight = FontWeight.Bold,
@@ -157,8 +156,7 @@ fun LensigoAboutScreen(
             Column(Modifier.widthIn(max = 540.dp),
                 horizontalAlignment = Alignment.CenterHorizontally) {
                 Spacer(Modifier.height(52.dp))
-                Image(painterResource(R.drawable.lensigo_symbol),
-                    "LENSIGO simbol objektiva", modifier = Modifier.size(128.dp))
+                LensigoBrandMark(modifier = Modifier.size(128.dp))
                 Spacer(Modifier.height(21.dp))
                 Text("LENSIGO", color = White, fontSize = 37.sp,
                     fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
