@@ -40,3 +40,10 @@ A screenshot score is valid only for the specific device settings used to captur
 - Ograničiti i profilirati memoriju video minijatura API 24–28.
 - Provjera APK/AAB native knjižnica prije svakog novog izdanja: `tools/play_package_check.py`.
 - Android 17 / compileSdk 37 uz targetSdk 36, Google Play 2026 i 16 KB provjeru. Ponašanje na stvarnom uređaju još nije potvrđeno.
+
+## Dodatne provjere nakon izmjena 02/03
+
+- Na Android emulatoru provjeriti Welcome i Permissions na 320 dp širine i u vodoravnom položaju; testirati uz 1.3× i 2× povećanje fonta.
+- Na kompaktnom rasporedu potvrditi da su Započni i Nastavi dostupni okomitim pomicanjem bez preklapanja kartica/dozvola.
+- Na Androidu 7–9 potvrditi da Kamera i Spremanje pokreću **odvojene** sistemske dijaloge; na Androidu 10+ Spremanje ne smije tražiti zastarjelu dozvolu.
+- Stvarna Android UI/emulator i pixel-diff testiranja još nisu izvršena.

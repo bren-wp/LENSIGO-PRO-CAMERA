@@ -91,3 +91,9 @@ UI je responzivan kroz Compose `widthIn(max=540.dp)`, okomito pomicanje i `heigh
 - **03 Dozvole:** zahtjevi za kameru i pohranu sada su zasebne akcije. Na Androidu 10+ vlastite snimke ne traže zastarjelu dozvolu za pohranu; na Androidu 7–9 ostaje zaseban zahtjev.
 - **Izdavanja:** GitHub CI broj izdanja sada je usklađen s Android `versionName` i rastućim `versionCode`, umjesto da svi binarni paketi zadržavaju 0.7.0.
 - **Nije potvrđeno:** 1:1 usporedba sa stvarnim 1080×2400 i 1600×2560 Android snimkama, velike pristupačne veličine fonta, ponašanje CameraX na fizičkim uređajima i potpisani Play AAB.
+
+## Nastavak — zasloni 02/03 i pristupačnost
+
+- **02 Dobrodošlica:** na standardnim zaslonima očuvan je postojeći raspored i tipografija. Na niskim/uskim prozorima koristi se manji okvir logotipa i okomito pomicanje radi dostupnog gumba Započni i većeg teksta.
+- **03 Dozvole:** mala visina i široko povećanje fonta više ne ovise o elementu koji raste unutar nedovoljno visokog zaslona; sadržaj se pomiče, tako da korisnik može doći do gumba Nastavi.
+- **Vizualni status:** nema mjerenja stvarnih snimaka uređaja za 02/03, stoga nije potvrđena 1:1 podudarnost s referentnim PNG-ovima.
