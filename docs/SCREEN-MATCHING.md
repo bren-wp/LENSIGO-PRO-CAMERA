@@ -138,3 +138,9 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - CameraX `VideoRecordEvent.Status.recordingStats.recordedDurationNanos` now drives the visible red recording timer, which shows hours/minutes/seconds. It appears only during actual recording, never as a static fake 00:00:12 label from the source screenshot.
 - First video session starts in 16:9 as reference 06, while still-photo modes start in 4:3. The user can change each ratio independently and both preferences persist locally.
 - Source `izvoz/mobitel/06_video.png` and tablet equivalent. The mockup's 4K/60 label is not displayed because only SD/HD capture has been implemented/tested. Device-specific resolution, lens switching while idle, microphone and preview geometry require real physical tests.
+
+## 07 Pro Camera — reference-guided manual control panel
+
+- The supplied `07_pro.png` has five lower dark cards (ISO, S, EV, WB, MF) and a white graduated ruler below. The native Compose overlay now uses 48dp minimum target height for manual controls and renders a 40-tick ruler, with a **cyan indicator linked to the actual selected manual value** (not a decorative fake needle).
+- Only genuine Camera2 manual-capability ranges are shown as usable. If the device does not support a control, that control remains disabled and gives honest feedback. The design mockup uses “RAW” and Kelvin values; the actual app currently captures JPEG and exposes available AWB modes, so neither RAW nor a Kelvin slider is falsely advertised.
+- Still needs emulator/physical screenshots and pixel-audit comparison on phone/tablet, accessibility reader and hardware capability checks. Added ruler is a fidelity improvement, not proof of a perfect 1:1 match.
