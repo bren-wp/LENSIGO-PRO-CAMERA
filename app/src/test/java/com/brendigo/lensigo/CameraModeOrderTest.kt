@@ -17,6 +17,24 @@ class CameraModeOrderTest {
     }
 
     @Test
+    fun videoReferenceShowsDualFiltersVideoPhotoPro() {
+        assertEquals(
+            listOf(CameraMode.DUAL, CameraMode.FILTERS, CameraMode.VIDEO,
+                CameraMode.PHOTO, CameraMode.PRO),
+            cameraModeStrip.take(5)
+        )
+    }
+
+    @Test
+    fun photoReferenceShowsFiltersVideoPhotoProNightFromSecondStripItem() {
+        assertEquals(
+            listOf(CameraMode.FILTERS, CameraMode.VIDEO, CameraMode.PHOTO,
+                CameraMode.PRO, CameraMode.NIGHT),
+            cameraModeStrip.drop(1).take(5)
+        )
+    }
+
+    @Test
     fun allCameraModesArePresentExactlyOnce() {
         assertEquals(CameraMode.entries.size, cameraModeOrder.size)
         assertEquals(CameraMode.entries.toSet(), cameraModeOrder.toSet())

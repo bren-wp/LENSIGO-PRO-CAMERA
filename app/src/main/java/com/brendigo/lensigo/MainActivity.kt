@@ -113,6 +113,12 @@ internal val cameraModeOrder = listOf(
     CameraMode.PANORAMA, CameraMode.DUAL
 )
 
+// The first/last mode is repeated only as a navigation affordance.
+// On the source 06 Video the visible strip is DUAL-FILTERI-VIDEO-FOTO-PRO;
+// on the source 05 Photo it is FILTERI-VIDEO-FOTO-PRO-NOĆ.
+internal val cameraModeStrip =
+    listOf(CameraMode.DUAL) + cameraModeOrder + listOf(CameraMode.FILTERS)
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -156,7 +162,7 @@ private fun LensigoApplication() {
     var pipOnLeft by remember { mutableStateOf(false) }
     val modeListState = rememberLazyListState()
     LaunchedEffect(mode) {
-        modeListState.animateScrollToItem((cameraModeOrder.indexOf(mode) - 2).coerceAtLeast(0))
+        modeListState.animateScrollToItem((cameraModeStrip.indexOf(mode) - 2).coerceAtLeast(0))
     }
     var photoAspectWide by remember {
         mutableStateOf(prefs.getBoolean("photo_aspect_wide", false))
@@ -1073,7 +1079,7 @@ private fun LensigoApplication() {
                         contentPadding = PaddingValues(horizontal = 32.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        items(cameraModeOrder) { item ->
+                        items(cameraModeStrip) { item ->
                             Text(item.title, fontSize = 13.sp,
                                 fontWeight = if (mode == item) FontWeight.Bold else FontWeight.Normal,
                                 color = if (mode == item) Cyan else Muted,

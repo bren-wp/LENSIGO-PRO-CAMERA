@@ -262,3 +262,11 @@ Uvedena je zajednička izvorno izmjerena `LensigoReferenceBackground` gradijentn
 - Uklonjen je dodatni uvodni slogan iznad gumba koji ne postoji na referentnoj slici, a visina gumba je minimalna umjesto fiksne za bolju prilagodbu fontu.
 - Početni zaslon Home ostaje dostupan pritiskom na naslov LENSIGO u kameri ili Android Back gestom.
 - Ovo je semantička i izvorno-vizualna korekcija. Stvarni screenshotovi pokrenute aplikacije za 1:1 još nisu uspoređeni.
+
+## 05 Foto i 06 Video — vidljivi redoslijed načina rada prema referenci
+
+- `izvoz/mobitel/05_photo.png`: oko aktivnog FOTO vidljive su oznake FILTERI — VIDEO — FOTO — PRO — NOĆ.
+- `izvoz/mobitel/06_video.png`: oko aktivnog VIDEO vidljive su DUAL — FILTERI — VIDEO — FOTO — PRO. Prijašnja Compose traka započinjala je FILTERI pa nije mogla prikazati prethodni DUAL u ovom stanju.
+- Traka zato sada koristi krajnje duplicirane navigacijske stavke, dok svaki **stvarni CameraMode ostaje jedan jedinstven način rada**. Dodani su JUnit testovi za oba izvorna redoslijeda i svih osam načina.
+- U izvornim mockupovima `assets/photo.jpg` već sadrži nacrtanu veliku traku zooma; `assets/video.jpg` već ima fiksni crveni brojač 00:00:12. To su grafički dijelovi *referentnih fotografija*, ne stvarno funkcionirajuće kontrole. Aplikacija namjerno prikazuje jedan stvarni CameraX zoom i stvarno vrijeme snimanja, bez dupliciranja zaostalih elemenata u prikazu kamere.
+- Referentne PNG datoteke još nisu uspoređene sa snimkama stvarne aplikacije na emulatoru; 1:1 ostaje neprovjereno.
