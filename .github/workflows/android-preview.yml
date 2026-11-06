@@ -70,7 +70,7 @@ jobs:
               if gh release upload "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --clobber; then
                 exit 0
               fi
-            elif gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO $TAG: Camera photo/video/panorama/dual mode strip now correctly wraps all eight live CameraX modes with two visible labels on each side; four reference sequences tested in JUnit, and every mode remains reachable. Source assets contain pre-rendered zoom/time graphic artifacts; the app uses only real sensor and recording UI. Earlier responsive Home and on-boarding changes remain. Pixel-perfect screenshots still require emulator comparison. APK debug-signed; AAB unsigned."; then
+            elif gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO $TAG: 07 PRO restores automatic AE and continuous AF when leaving manual controls, avoids unsupported sliders and makes single available shutter speed actionable. 08 Night and 09 Portrait preserve hardware-gated vendor effects with local offline fallbacks. 10 Panorama now reliably recycles decoded and scaled frames even after exceptions. 11 Dual retains honest concurrent/fallback controls. 12 Filters clean up native thumbnail buffers on slider changes. Re-audited Gallery, Viewer, Editor, Settings, Privacy and About; device-level 1:1 checks remain outstanding. APK debug-signed; AAB unsigned."; then
               exit 0
             fi
             if [ "$attempt" -eq 4 ]; then

@@ -101,7 +101,8 @@ fun ProControlOverlay(
                 Triple(Setting.FOCUS, "MF", focusDisplay)
             ).forEach { (setting, label, value) ->
                 val supported = when(setting) {
-                    Setting.ISO, Setting.SHUTTER -> caps.manualSensor
+                    Setting.ISO -> caps.manualSensor && caps.iso?.let { it.upper > it.lower } == true
+                    Setting.SHUTTER -> caps.manualSensor && availableShutters.isNotEmpty()
                     Setting.EV -> maxExposure > minExposure
                     Setting.WB -> wb.size > 1
                     Setting.FOCUS -> caps.focusDistance > 0f
@@ -141,7 +142,7 @@ fun ProControlOverlay(
                 } else NoControl("Ručni ISO nije podržan")
             }
             Setting.SHUTTER -> {
-                if (caps.manualSensor && availableShutters.isNotEmpty()) {
+                if (caps.manualSensor && availableShutters.size > 1) {
                     val selectedIndex = availableShutters.indexOfFirst { it.first == values.shutterNanos }
                         .takeIf { it >= 0 } ?: availableShutters.indices.minByOrNull {
                         abs(availableShutters[it].first - values.shutterNanos)
@@ -154,6 +155,16 @@ fun ProControlOverlay(
                         }, valueRange = 0f..availableShutters.lastIndex.coerceAtLeast(1).toFloat(),
                         steps = (availableShutters.size - 2).coerceAtLeast(0),
                         modifier = Modifier.padding(horizontal = 12.dp).heightIn(min = 48.dp))
+                } else if (caps.manualSensor && availableShutters.size == 1) {
+                    TextButton(onClick = {
+                        onValues(values.copy(
+                            manualExposure = true,
+                            shutterNanos = availableShutters.first().first
+                        ))
+                    }, modifier = Modifier.fillMaxWidth()) {
+                        Text("Primijeni " + availableShutters.first().second,
+                            color = PanelCyan)
+                    }
                 } else NoControl("Brzina zatvarača nije podržana")
             }
             Setting.EV -> {

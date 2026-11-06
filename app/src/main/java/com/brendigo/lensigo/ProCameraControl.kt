@@ -79,6 +79,11 @@ object ProCameraControl {
                 values.iso.coerceIn(isoRange.lower, isoRange.upper))
             builder.setCaptureRequestOption(CaptureRequest.SENSOR_EXPOSURE_TIME,
                 values.shutterNanos.coerceIn(timeRange.lower, timeRange.upper))
+        } else {
+            // Explicitly return the sensor to auto exposure when the user
+            // switches from ISO/shutter to EV or exits manual exposure.
+            builder.setCaptureRequestOption(CaptureRequest.CONTROL_AE_MODE,
+                CaptureRequest.CONTROL_AE_MODE_ON)
         }
         val wb = if (capabilities.whiteBalanceModes.contains(values.whiteBalanceMode))
             values.whiteBalanceMode else CaptureRequest.CONTROL_AWB_MODE_AUTO
@@ -88,6 +93,10 @@ object ProCameraControl {
                 CaptureRequest.CONTROL_AF_MODE_OFF)
             builder.setCaptureRequestOption(CaptureRequest.LENS_FOCUS_DISTANCE,
                 values.focusDiopters.coerceIn(0f, capabilities.focusDistance))
+        } else {
+            // A former MF value must not persist after switching back to AF.
+            builder.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE,
+                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
         }
         Camera2CameraControl.from(camera.cameraControl).setCaptureRequestOptions(builder.build())
     }

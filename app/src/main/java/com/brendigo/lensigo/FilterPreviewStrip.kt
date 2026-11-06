@@ -11,6 +11,7 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.produceState
 import androidx.compose.ui.Alignment
@@ -19,6 +20,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.ImageBitmap
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.asAndroidBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -64,6 +66,18 @@ internal fun LensigoFilterPreviewStrip(
                 }
             } finally {
                 source.recycle()
+            }
+        }
+    }
+    // Every slider update creates a small set of actual locally rendered
+    // thumbnails. Dispose previous native bitmaps after Compose releases
+    // their image nodes to avoid accumulated memory on low-RAM phones.
+    DisposableEffect(previews) {
+        val snapshots = previews.values.toList()
+        onDispose {
+            snapshots.forEach { image ->
+                val bitmap = image.asAndroidBitmap()
+                if (!bitmap.isRecycled) bitmap.recycle()
             }
         }
     }

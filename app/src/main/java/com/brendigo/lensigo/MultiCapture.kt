@@ -34,8 +34,8 @@ object PanoramaComposer {
             var output: Bitmap? = null
             try {
                 // First frame defines the aspect ratio, all frames normalized.
-                var previous = FilterEngine.decode(frames.first(), 1500)
-                val tileWidth = (previous.width * (targetHeight / previous.height.toFloat()))
+                val first = FilterEngine.decode(frames.first(), 1500)
+                val tileWidth = (first.width * (targetHeight / first.height.toFloat()))
                     .toInt().coerceIn(320, 1300)
                 val overlapPixels = (tileWidth * OVERLAP).toInt()
                 val advance = tileWidth - overlapPixels
@@ -46,34 +46,41 @@ object PanoramaComposer {
                 val canvas = Canvas(result)
                 result.eraseColor(Color.BLACK)
                 for (index in frames.indices) {
-                    if (index != 0) previous = FilterEngine.decode(frames[index], 1500)
-                    val scaled = Bitmap.createScaledBitmap(previous, tileWidth, targetHeight, true)
-                    previous.recycle()
-                    val x = index * advance
-                    if (index == 0) {
-                        canvas.drawBitmap(scaled, x.toFloat(), 0f, null)
-                    } else {
-                        // Blend overlap in narrow strips without allocating full-size masks.
-                        val paint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
-                        val stripCount = 22
-                        for (i in 0 until stripCount) {
-                            val left = overlapPixels * i / stripCount
-                            val right = overlapPixels * (i + 1) / stripCount
-                            if (right <= left) continue
-                            paint.alpha = (255 * ((i + .5f) / stripCount)).toInt()
-                            canvas.drawBitmap(
-                                scaled, Rect(left, 0, right, targetHeight),
-                                RectF((x + left).toFloat(), 0f,
-                                    (x + right).toFloat(), targetHeight.toFloat()), paint
-                            )
+                    val decoded = if (index == 0) first
+                        else FilterEngine.decode(frames[index], 1500)
+                    var scaled: Bitmap? = null
+                    try {
+                        scaled = Bitmap.createScaledBitmap(
+                            decoded, tileWidth, targetHeight, true
+                        )
+                        val x = index * advance
+                        if (index == 0) {
+                            canvas.drawBitmap(scaled, x.toFloat(), 0f, null)
+                        } else {
+                            // Blend overlap in strips without full-frame masks.
+                            val paint = Paint(Paint.FILTER_BITMAP_FLAG or Paint.ANTI_ALIAS_FLAG)
+                            val stripCount = 22
+                            for (i in 0 until stripCount) {
+                                val left = overlapPixels * i / stripCount
+                                val right = overlapPixels * (i + 1) / stripCount
+                                if (right <= left) continue
+                                paint.alpha = (255 * ((i + .5f) / stripCount)).toInt()
+                                canvas.drawBitmap(
+                                    scaled, Rect(left, 0, right, targetHeight),
+                                    RectF((x + left).toFloat(), 0f,
+                                        (x + right).toFloat(), targetHeight.toFloat()), paint
+                                )
+                            }
+                            paint.alpha = 255
+                            canvas.drawBitmap(scaled,
+                                Rect(overlapPixels, 0, tileWidth, targetHeight),
+                                RectF((x + overlapPixels).toFloat(), 0f,
+                                    (x + tileWidth).toFloat(), targetHeight.toFloat()), paint)
                         }
-                        paint.alpha = 255
-                        canvas.drawBitmap(scaled,
-                            Rect(overlapPixels, 0, tileWidth, targetHeight),
-                            RectF((x + overlapPixels).toFloat(), 0f,
-                                (x + tileWidth).toFloat(), targetHeight.toFloat()), paint)
+                    } finally {
+                        if (scaled !== decoded && scaled?.isRecycled == false) scaled.recycle()
+                        if (!decoded.isRecycled) decoded.recycle()
                     }
-                    scaled.recycle()
                 }
                 MediaLibrary.saveBitmap(context, result, "PANO", quality)
             } finally {

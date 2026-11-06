@@ -283,3 +283,15 @@ Provedena je dodatna provjera `05_photo.png`, `06_video.png`, `10_panorama.png` 
 Traka sada ponavlja samo rubne vizualne stavke radi kružnog prikaza i pamti za PANORAMA/DUAL posljednju pojavu u listi, dok svih osam stvarnih CameraX načina ostaje jedinstveno. JUnit provjere obuhvaćaju četiri izvorna prikaza i dostupnost pet oznaka za svaki od osam načina.
 
 Izvorna pozadinska fotografija `assets/photo.jpg` već sadrži statički nacrtanu veliku zoom traku, a `assets/video.jpg` fiksni mjerač 00:00:12. Aplikacija ne treba duplicirati takve kompozitne dekoracije pri stvarnom snimanju; izvještaj uspoređuje samo stvarne UI slojeve i hardverske kontrole. Stvarna 1:1 usporedba s Android screenshotovima još nije izvršena.
+
+## 07–12 — funkcionalni audit Pro, Night, Portrait, Panorama, Dual i Filters
+
+Provjerene su izvorne reference `izvoz/mobitel/07_pro.png` do `12_filters.png` prema stvarnim Compose i CameraX putanjama (nije izveden fizički test senzora).
+
+- **07 Pro:** vraćanje s ručnog ISO/ekspozicije na EV eksplicitno uključuje automatsku AE kontrolu; povratak s MF na AF eksplicitno vraća kontinuirani autofokus. Kontrole ISO i S aktivne su samo kad Camera2 prijavi odgovarajuću podršku; kod jedne jedine stvarno dostupne vrijednosti zatvarača prikazuje se izvršiva akcija umjesto nefunkcionalnog klizača. Pro ostaje JPEG, bez lažnog RAW obećanja iz mockupa.
+- **08 Night / 09 Portrait:** potvrđeno je da se proizvođačka Night/Bokeh ekstenzija koristi samo uz `isExtensionAvailable` i da se u suprotnom primjenjuje lokalna obrada; nije riječ o sintetičkom vraćanju nedostajućih detalja ili pravom ML segmentiranju lica. Offline obrada dijeli istu putanju kodiranja i poziva iz kamere.
+- **10 Panorama:** nakon svakog dekodiranog kadra i privremenog skaliranja resursi se oslobađaju u `finally` bloku — i kad kodiranje/skaliranje baci iznimku. Izvorni 2–5 kadrova, progres i vodič ostaju. Spajanje je s fiksnim preklapanjem (ne automatska registracija perspektive).
+- **11 Dual:** provjeren je konkurentni par senzora i dvostupanjski fallback. Nije na svim Android uređajima podržano istodobno snimanje dviju kamera, a UI to jasno navodi.
+- **12 Filters:** lokalno generirane sličice sada recikliraju nativne bitmap-e pri zamjeni intenziteta ili izlasku s ekrana, umjesto zadržavanja sve većeg skupa filtara u memoriji. 12 filtara i stvarni JPEG izvoz ostaju isti.
+- **13–19 ponovna provjera:** galerija prikazuje samo vlastite MediaStore zapise, Viewer zumira fotografije, Editor sprema kopiju bez prepisivanja izvornika, a Settings/Privacy/About imaju stvarno povezane navigacijske akcije. Potrebne su daljnje korekcije prema referenci za kontrolu zvuka videa i izvedive postavke.
+- Ne tvrditi 1:1 dok ne postoje Android screencap datoteke i diferencijalna mjerenja za obadva uređaja.
