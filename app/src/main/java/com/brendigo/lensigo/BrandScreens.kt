@@ -1,6 +1,7 @@
 package com.brendigo.lensigo
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.border
@@ -17,6 +18,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Path
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.Image
 import androidx.compose.ui.text.font.FontWeight
@@ -32,14 +36,19 @@ private val White = Color(0xFFF8FBFF)
 
 @Composable
 fun LensigoSplash() {
-    BoxWithConstraints(Modifier.fillMaxSize().background(Night)) {
-        // The standard phone layout keeps the reference geometry. Very short or
-        // narrow viewports must scroll rather than clipping the brand or footer.
+    BoxWithConstraints(
+        Modifier.fillMaxSize().background(
+            Brush.verticalGradient(
+                listOf(Color(0xFF0E2134), Color(0xFF0D2032), Color(0xFF08111E))
+            )
+        )
+    ) {
+        SplashWaves()
         val compact = maxHeight < 600.dp || maxWidth < 350.dp
         if (compact) {
             Column(
-                Modifier.fillMaxSize().verticalScroll(rememberScrollState())
-                    .heightIn(min = maxHeight)
+                Modifier.fillMaxSize()
+                    .verticalScroll(rememberScrollState())
                     .padding(horizontal = 16.dp, vertical = 20.dp),
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.SpaceEvenly
@@ -48,14 +57,47 @@ fun LensigoSplash() {
                 SplashFooter(compact = true)
             }
         } else {
+            // Reference 01: aperture begins 24.5% down the full-height screen.
             SplashIdentity(
                 compact = false,
-                modifier = Modifier.align(Alignment.Center).offset(y = (-70).dp)
+                modifier = Modifier.align(Alignment.TopCenter)
+                    .offset(y = maxHeight * .245f)
             )
-            SplashFooter(
-                compact = false,
-                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 42.dp)
+            CircularProgressIndicator(
+                modifier = Modifier.align(Alignment.BottomCenter)
+                    .padding(bottom = maxHeight * .115f).size(22.dp),
+                color = Accent, trackColor = Color(0xFF10597C),
+                strokeWidth = 2.5.dp
             )
+            Text(
+                "BRENDIGO.COM",
+                modifier = Modifier.align(Alignment.BottomCenter)
+                    .padding(bottom = maxHeight * .054f),
+                color = Muted, fontSize = 10.sp,
+                fontWeight = FontWeight.Bold, letterSpacing = .2.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun SplashWaves() {
+    Canvas(Modifier.fillMaxSize()) {
+        val w = size.width
+        val h = size.height
+        // Four broad lens arcs, rather than the circles of a generic loader.
+        listOf(
+            .814f to Color(0xFF12547D),
+            .847f to Color(0xFF00D4FF),
+            .871f to Color(0xFF14486D),
+            .899f to Color(0xFF00D4FF)
+        ).forEach { (edge, color) ->
+            val curve = Path().apply {
+                moveTo(-w * .05f, h * (edge + .008f))
+                quadraticBezierTo(w * .5f, h * (edge - .078f),
+                    w * 1.05f, h * (edge + .008f))
+            }
+            drawPath(curve, color = color, style = Stroke(width = 2.dp.toPx()))
         }
     }
 }
@@ -63,19 +105,19 @@ fun LensigoSplash() {
 @Composable
 private fun SplashIdentity(compact: Boolean, modifier: Modifier = Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
-        LensigoBrandMark(modifier = Modifier.size(if (compact) 100.dp else 134.dp))
-        Spacer(Modifier.height(if (compact) 8.dp else 13.dp))
+        LensigoBrandMark(Modifier.size(100.dp))
+        Spacer(Modifier.height(if (compact) 8.dp else 10.dp))
         Text("LENSIGO", fontWeight = FontWeight.Bold,
-            fontSize = if (compact) 36.sp else 46.sp,
-            color = White, letterSpacing = 1.sp)
-        Text("P R O   C A M E R A", fontWeight = FontWeight.Bold,
-            fontSize = if (compact) 12.sp else 15.sp, color = Accent)
-        Spacer(Modifier.height(8.dp))
-        Text("B Y   B R E N D I G O", fontSize = 10.sp,
-            color = Muted, fontWeight = FontWeight.Bold)
-        Spacer(Modifier.height(if (compact) 26.dp else 62.dp))
-        Text("Svaki kadar. Tvoja priča.", color = White,
-            fontSize = if (compact) 15.sp else 17.sp,
+            fontSize = if (compact) 34.sp else 38.sp,
+            color = White, letterSpacing = .7.sp)
+        Spacer(Modifier.height(5.dp))
+        Text("PRO CAMERA", fontWeight = FontWeight.Bold,
+            fontSize = 15.sp, color = Accent, letterSpacing = 3.sp)
+        Spacer(Modifier.height(5.dp))
+        Text("BY BRENDIGO", fontSize = 10.sp, color = Muted,
+            fontWeight = FontWeight.Bold, letterSpacing = 2.sp)
+        Spacer(Modifier.height(if (compact) 26.dp else 42.dp))
+        Text("Svaki kadar. Tvoja priča.", color = White, fontSize = 17.sp,
             textAlign = TextAlign.Center)
     }
 }
@@ -85,7 +127,8 @@ private fun SplashFooter(compact: Boolean, modifier: Modifier = Modifier) {
     Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
         CircularProgressIndicator(
             Modifier.size(if (compact) 22.dp else 25.dp),
-            color = Accent, strokeWidth = 2.dp
+            color = Accent, trackColor = Color(0xFF10597C),
+            strokeWidth = 2.dp
         )
         Spacer(Modifier.height(if (compact) 14.dp else 25.dp))
         Text("BRENDIGO.COM", fontSize = 10.sp, color = Muted,

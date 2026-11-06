@@ -104,3 +104,11 @@ UI je responzivan kroz Compose `widthIn(max=540.dp)`, okomito pomicanje i `heigh
 - Na širini manjoj od 340 dp prelazi se na jedan stupac da nazivi načina snimanja ne budu odrezani.
 - Kartice dopuštaju dva retka na velikom fontu; zaglavlje i banner prilagođavaju se većim fontovima, a akcije s ikonama imaju pristupačnije oznake.
 - **Preostaje:** stvarna usporedba geometrije i boja s 04_home.png, test Android čitača zaslona i instrumentirano testiranje na uređaju.
+
+## Splash reference reconstruction after v0.7.24
+
+From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
+- Phone source: `izvoz/mobitel/01_splash.png` (1080×2400); tablet: `izvoz/tablet/01_splash.png` (1600×2560).
+- The supplied design has a dark `#0E2134` upper background fading to `#08111E`, an aperture starting around 24.5% from the top, four lower cyan/navy arcs and a cyan circular loading indicator.
+- This revision models the arcs with Compose Canvas, positions the logo proportionally and hides Android system bars only while the Splash is visible. Regular Android navigation and status bars are restored on later screens.
+- **Verification pending:** the above is a source-guided layout reconstruction, NOT an emulator screenshot comparison. OEM system bar transitions, density/font scale and exact pixel scores still need device capture.

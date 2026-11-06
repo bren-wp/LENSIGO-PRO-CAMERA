@@ -1,6 +1,7 @@
 package com.brendigo.lensigo
 
 import android.Manifest
+import android.app.Activity
 import android.content.ContentValues
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -74,6 +75,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
+import androidx.core.view.WindowInsetsCompat
 import androidx.lifecycle.Lifecycle
 import androidx.lifecycle.LifecycleEventObserver
 import androidx.lifecycle.compose.LocalLifecycleOwner
@@ -114,6 +117,20 @@ private fun LensigoApplication() {
     val scope = rememberCoroutineScope()
     val prefs = remember { context.getSharedPreferences("lensigo_preferences", 0) }
     var screen by remember { mutableStateOf(Screen.SPLASH) }
+    // The reference Splash has no system chrome. Restore OS bars on every
+    // interactive screen so navigation gestures remain available.
+    LaunchedEffect(screen) {
+        (context as? Activity)?.let { activity ->
+            val controller = WindowCompat.getInsetsController(
+                activity.window, activity.window.decorView
+            )
+            if (screen == Screen.SPLASH) {
+                controller.hide(WindowInsetsCompat.Type.systemBars())
+            } else {
+                controller.show(WindowInsetsCompat.Type.systemBars())
+            }
+        }
+    }
     LaunchedEffect(Unit) {
         delay(750)
         screen = if (prefs.getBoolean("onboarded", false)) Screen.CAMERA else Screen.WELCOME
