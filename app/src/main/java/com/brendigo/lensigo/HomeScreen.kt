@@ -68,18 +68,14 @@ private val tiles = listOf(
  * locally and packaged as a tiny WebP. No remote image loading or network use.
  */
 @Composable
-private fun BrandBanner() {
+private fun BrandBanner(tablet: Boolean) {
     val fontScale = LocalDensity.current.fontScale
-    val bannerHeight = when {
-        fontScale >= 2f -> 320.dp
-        fontScale >= 1.6f -> 270.dp
-        fontScale >= 1.2f -> 210.dp
-        else -> 164.dp
-    }
+    val bannerHeight = HomeLayoutRules.bannerHeightDp(tablet, fontScale).dp
+    val corner = RoundedCornerShape(if (tablet) 21.dp else 15.dp)
     Box(
         Modifier.fillMaxWidth().height(bannerHeight)
-            .clip(RoundedCornerShape(21.dp))
-            .border(1.dp, Outline, RoundedCornerShape(21.dp))
+            .clip(corner)
+            .border(1.dp, Outline, corner)
     ) {
         Image(
             painter = painterResource(R.drawable.lensigo_home_hero),
@@ -95,8 +91,9 @@ private fun BrandBanner() {
             )
         )
         Column(
-            Modifier.align(Alignment.BottomStart).padding(18.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            Modifier.fillMaxSize().padding(horizontal = 18.dp,
+                vertical = if (tablet) 24.dp else 17.dp),
+            verticalArrangement = Arrangement.SpaceBetween
         ) {
             Text("OTKRIJ NOVU PERSPEKTIVU", color = Cyan,
                 fontWeight = FontWeight.Bold, fontSize = 11.sp)
@@ -121,21 +118,18 @@ internal fun LensigoHomeScreen(
     ))) {
         val tablet = maxWidth >= 600.dp
         val fontScale = LocalDensity.current.fontScale
-        val narrowPhone = maxWidth < 340.dp || (maxWidth < 420.dp && fontScale >= 1.6f)
-        val columns = when {
-            tablet && fontScale >= 1.6f -> 2
-            tablet -> 4
-            narrowPhone -> 1
-            else -> 2
-        }
+        val columns = HomeLayoutRules.columns(maxWidth.value, fontScale)
+        val tileHeight = HomeLayoutRules.tileHeightDp(tablet, fontScale).dp
+        val gridGap = if (tablet) 11.dp else 7.dp
+        val horizontalPad = if (tablet) 24.dp else 17.dp
         val maxContentWidth = if (tablet) 950.dp else 540.dp
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(
-                Modifier.fillMaxWidth().widthIn(max = maxContentWidth)
-                    .heightIn(min = 77.dp).padding(horizontal = 17.dp),
+                Modifier.widthIn(max = maxContentWidth).fillMaxWidth()
+                    .heightIn(min = 77.dp).padding(horizontal = horizontalPad),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                LensigoBrandMark(Modifier.size(44.dp).clickable(
+                LensigoBrandMark(Modifier.size(if (tablet) 44.dp else 37.dp).clickable(
                     onClickLabel = "O aplikaciji LENSIGO",
                     role = Role.Button, onClick = onAbout
                 ))
@@ -155,14 +149,15 @@ internal fun LensigoHomeScreen(
             }
             LazyVerticalGrid(
                 columns = GridCells.Fixed(columns),
-                modifier = Modifier.weight(1f).widthIn(max = maxContentWidth),
-                horizontalArrangement = Arrangement.spacedBy(10.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp),
-                contentPadding = PaddingValues(start = 17.dp, end = 17.dp, top = 20.dp,
-                    bottom = 12.dp)
+                modifier = Modifier.weight(1f).widthIn(max = maxContentWidth).fillMaxWidth(),
+                horizontalArrangement = Arrangement.spacedBy(gridGap),
+                verticalArrangement = Arrangement.spacedBy(if (tablet) 11.dp else 10.dp),
+                contentPadding = PaddingValues(
+                    start = horizontalPad, end = horizontalPad, top = 20.dp, bottom = 12.dp
+                )
             ) {
                 item(span = { GridItemSpan(maxLineSpan) }) {
-                    BrandBanner()
+                    BrandBanner(tablet)
                 }
                 item(span = { GridItemSpan(maxLineSpan) }) {
                     Text("Načini snimanja", color = White,
@@ -171,29 +166,29 @@ internal fun LensigoHomeScreen(
                 }
                 items(tiles, key = { it.mode.name }) { tile ->
                     Column(
-                        Modifier.fillMaxWidth().heightIn(min = 105.dp)
+                        Modifier.fillMaxWidth().heightIn(min = tileHeight)
                             .background(
                                 Brush.linearGradient(listOf(Color(0xFF1B394F), Color(0xFF143048))),
-                                RoundedCornerShape(17.dp)
+                                RoundedCornerShape(if (tablet) 17.dp else 12.dp)
                             )
-                            .border(1.dp, Outline, RoundedCornerShape(17.dp))
+                            .border(1.dp, Outline, RoundedCornerShape(if (tablet) 17.dp else 12.dp))
                             .clickable(onClickLabel = tile.hint, role = Role.Button) {
                                 onMode(tile.mode)
-                            }.padding(15.dp),
+                            }.padding(if (tablet) 17.dp else 12.dp),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
                         Icon(tile.icon, contentDescription = null, tint = Cyan,
-                            modifier = Modifier.size(28.dp))
-                        Spacer(Modifier.height(15.dp))
+                            modifier = Modifier.size(if (tablet) 28.dp else 22.dp))
+                        Spacer(Modifier.height(if (tablet) 18.dp else 11.dp))
                         Text(tile.label, color = White, fontSize = 14.sp,
                             fontWeight = FontWeight.Bold, maxLines = 2,
                             overflow = TextOverflow.Ellipsis)
                     }
                 }
             }
-            Box(Modifier.fillMaxWidth().widthIn(max = maxContentWidth)
-                .padding(horizontal = 17.dp, vertical = 15.dp)
-                .heightIn(min = 57.dp)
+            Box(Modifier.widthIn(max = maxContentWidth).fillMaxWidth()
+                .padding(horizontal = horizontalPad, vertical = 15.dp)
+                .heightIn(min = if (tablet) 57.dp else 40.dp)
                 .clip(RoundedCornerShape(15.dp))
                 .border(1.dp, Cyan.copy(alpha = .8f), RoundedCornerShape(15.dp))
                 .background(Color(0xFF0B4868))

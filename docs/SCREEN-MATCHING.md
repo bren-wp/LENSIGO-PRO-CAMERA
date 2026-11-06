@@ -243,3 +243,14 @@ Izvori: izvorni paket `LENSIGO_Branding_Android_UI_19_ekrana(1).zip` (`izvoz/mob
 Dostavljeni izvorni PNG-ovi `13_gallery.png`, `15_editor.png`, `16_settings.png`, `17_camera-settings.png`, `18_privacy.png`, `19_about.png` imaju jednaku postepenu promjenu pozadine (mjereno na x=16): y=100 RGB(14,33,52), y=700 RGB(14,34,53), y=1000 RGB(14,33,52), y=1600 RGB(12,28,45), y=2320 RGB(8,18,31). Prijašnji Compose kod koristio je gotovo jednobojnu tamnoplavu podlogu.
 
 Uvedena je zajednička izvorno izmjerena `LensigoReferenceBackground` gradijentna četverostupanjska pozadina na 13 Galeriji, 15 Editoru, 16–17 Postavkama, 18 Privatnosti i 19 O aplikaciji. Tamna pozadina 14 Viewer ostaje odvojena od Editora kao na referenci. Ovo ispravlja **konkretno potvrđeno odstupanje boja i gradijenta**, ali još nije matematički dokaz pixel-perfect 1:1 jer se izmjerene točke aproksimiraju i nema potvrđenih snimaka stvarne Android aplikacije.
+
+## 01 Splash / 04 Home — izvorni PNG, referentno mjerenje nakon v0.7.46
+
+- Stvarni korisnikov ZIP sadrži 1080×2400 `izvoz/mobitel/01_splash.png` i `04_home.png`, te 1600×2560 odgovarajuće tabletne reference. Izmjerene su izvorne slike, **ne** Android screenshotovi aplikacije.
+- **01 Splash:** gornji rub cijan logotipa u PNG-u y≈591/2400 = 24,6% (telefon) i y≈629/2560 = 24,6% (tablet). Postojeći Compose offset 24,5% ostavljen je bez nepotrebnog pomicanja.
+- **04 Home mobitel:** referentni retci kartica y=916–1144, 1176–1404, 1436–1664 i 1696–1924, svi visoki 228 px (=76dp na 3 px/dp). Stari minimum 105dp (315px) mogao je sakriti četvrti red ispod ekrana. Novi minimum 76dp i smanjene ikone/padding omogućuju raspored prema PNG-u.
+- **04 Home tablet:** referentna prva dva retka približno su y=916–1178 i 1210–1472, tj. 262px (=131dp na profilu 2 px/dp). Novi tabletni minimum 131dp u četiri stupca.
+- **04 Home banner:** visina prema izvorniku ≈146dp telefon i ≈218dp tablet; nadnaslov je gore, naslov u sredini i opis pri dnu. Prijašnji jedinstveni 164dp banner i sva tri teksta poravnana pri dnu nisu slijedili izvor.
+- **Galerija:** referentni mobilni gumb sada ima 40dp min, tabletni 57dp; akcija je stvarna, ne demonstracijska.
+- Pri većem fontu pravila povećavaju dimenzije, čuvaju skrolanje i čitljivost, i zato namjerno ne repliciraju statični PNG.
+- **Nema potvrde 1:1 bez realnih Android screenshots i pixel-diff testa**. Kadriranje lokalne WebP naslovne fotografije na visokodenzitetnim ekranima još treba zasebno verificirati.

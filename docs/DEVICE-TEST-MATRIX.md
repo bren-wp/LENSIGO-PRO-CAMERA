@@ -54,3 +54,10 @@ A screenshot score is valid only for the specific device settings used to captur
 - Na 600 dp i više ostaje četiri stupca, ali provjeriti razmještaj i čitljivost pri povećanju fonta do 2×.
 - Screen reader mora moći aktivirati logotip (O aplikaciji), svaku funkcionalnu karticu i postavke; ikona u kartici ne smije nepotrebno dvostruko izgovarati naziv.
 - Stvarne Android snimke zaslona, live CameraX način rada i pixel-diff rezultat nisu potvrđeni.
+
+## 04 Home — provjere nakon dimenzijskog usklađivanja
+
+- Telefon 360dp na 3×: dva stupca, četiri reda kartica minimalne visine 76dp, vertikalni razmak 10dp, banner 146dp i galerija 40dp.
+- Tablet 800dp na 2×: četiri stupca, dva reda visine 131dp, banner 218dp, galerija 57dp.
+- Potvrditi na uređaju: pune četiri mobilne kartice po vertikali, bez prisilnog preklapanja Gallery akcije, pri povećanom fontu dostupnost svih načina rada pomicanjem.
+- Izvorni PNG-ovi nisu screenshotovi stvarno pokrenutog Android UI-ja; ne označavati kao vizualno 1:1.
