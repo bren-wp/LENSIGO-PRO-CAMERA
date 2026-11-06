@@ -1,6 +1,7 @@
 package com.brendigo.lensigo
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -25,6 +26,9 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.Image
 import androidx.compose.ui.text.font.FontWeight
@@ -179,7 +183,8 @@ fun LensigoWelcome(onBack: () -> Unit, onSettings: () -> Unit, onContinue: () ->
     BoxWithConstraints(Modifier.fillMaxSize().background(Brush.verticalGradient(
         listOf(Night, Color(0xFF0A1B2C), Color(0xFF08111E))
     ))) {
-        val compact = maxHeight < 680.dp || maxWidth < 350.dp
+        val compact = maxHeight < 680.dp || maxWidth < 350.dp ||
+            LocalDensity.current.fontScale >= 1.35f
         Column(
             Modifier.fillMaxSize()
                 .then(if (compact) Modifier.verticalScroll(rememberScrollState()) else Modifier)
@@ -231,7 +236,8 @@ fun LensigoPermissions(
     BoxWithConstraints(Modifier.fillMaxSize().background(Brush.verticalGradient(
         listOf(Night, Color(0xFF0A1B2C), Color(0xFF08111E))
     ))) {
-        val compact = maxHeight < 710.dp || maxWidth < 350.dp
+        val compact = maxHeight < 710.dp || maxWidth < 350.dp ||
+            LocalDensity.current.fontScale >= 1.35f
         Column(
             Modifier.fillMaxSize()
                 .then(if (compact) Modifier.verticalScroll(rememberScrollState()) else Modifier)
@@ -285,20 +291,34 @@ private fun PermissionRow(
     onClick: () -> Unit, notRequired: Boolean = false,
     icon: @Composable () -> Unit
 ) {
-    Row(Modifier.fillMaxWidth().heightIn(min = 72.dp)
-        .background(Color(0xFF102E45), RoundedCornerShape(12.dp))
-        .border(1.dp, Color(0xFF25516B), RoundedCornerShape(12.dp))
-        .padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
+    // The original reference uses a full-width permission card, not a text
+    // action inside every row. The entire card is the touch target, with an
+    // accessible grant state and genuine Android permission request.
+    Row(
+        Modifier.fillMaxWidth().heightIn(min = 72.dp)
+            .background(Color(0xFF102E45), RoundedCornerShape(12.dp))
+            .border(1.dp, Color(0xFF25516B), RoundedCornerShape(12.dp))
+            .clickable(
+                enabled = !granted && !notRequired,
+                role = Role.Button,
+                onClickLabel = "Dopusti pristup: $title",
+                onClick = onClick
+            )
+            .semantics {
+                stateDescription = when {
+                    notRequired -> "Dodatno dopuštenje nije potrebno"
+                    granted -> "Dopušteno"
+                    else -> "Nije dopušteno"
+                }
+            }
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
         icon()
         Spacer(Modifier.width(12.dp))
         Column(Modifier.weight(1f)) {
             Text(title, color = White, fontWeight = FontWeight.Bold)
             Text(detail, color = Muted, fontSize = 11.sp)
-        }
-        TextButton(onClick = onClick, enabled = !granted && !notRequired) {
-            Text(if (notRequired) "NIJE POTREBNA"
-                else if (granted) "ODOBRENO" else "DOPUSTI",
-                fontSize = 11.sp, color = if (notRequired || granted) Accent else White)
         }
     }
 }

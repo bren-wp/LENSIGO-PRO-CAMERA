@@ -194,3 +194,11 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - Splash 01 pri povećanju fonta ≥1,4× koristi kompaktniji pomični izgled da se logotip, slogan i podnožje ne odrežu; standardni raspored ostaje nepromijenjen.
 - Home 04 na tabletima s fontom ≥1,6× prikazuje dvije umjesto četiri kartice u retku, a na mobitelima užim od 420 dp s takvim fontom po jednu; naslovni banner dobiva dodatnu visinu i galerija pristupačan naziv akcije.
 - **Provjera 1:1 nije potvrđena:** stvarne Android snimke zaslona i poravnate izvorne PNG reference trebaju se usporediti pixel-audit alatom.
+
+## Funkcionalni i vizualni pregled — dozvole i snimanje (nakon v0.7.39)
+
+- **02 Welcome:** provjera prozora pri fontScale ≥1,35 aktivira pomični raspored; standardni izgled ostaje očuvan.
+- **03 Permissions:** uklonjeni su tekstni gumbi koji nisu na izvornim vizualnim referencama. Cijela kartica pokreće samo stvarni Android zahtjev za dozvolu, a čitač zaslona dobiva stanje odobrenja. Na Androidu 10+ lokalne snimke ne traže zastarjelu dozvolu za pohranu.
+- **05 Photo / 10 Panorama / 11 Dual:** stvaranje privremene JPEG datoteke sada obrađuje neuspjeh pohrane bez rušenja korisničkog zaslona; neuspjelo stvaranje druge Dual snimke čisti prvu snimku.
+- **06 Video:** pri prelasku aktivnosti u ON_STOP zaustavlja se aktivno snimanje i otkazuje samookidač; nakon neuspjeha finalizacije briše se djelomični MediaStore izlaz nastao u toj sesiji.
+- **Nije dokazano 1:1:** ove korekcije temelje se na izvornoj referenci i implementacijskom auditu. Provjeru 1080×2400 i 1600×2560 potrebno je provesti na stvarnim Android screenshotovima, kao i fizičke CameraX testove.

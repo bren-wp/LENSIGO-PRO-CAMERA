@@ -265,6 +265,22 @@ private fun LensigoApplication() {
     LaunchedEffect(mode, front) { focusPoint = null }
     var activeMedia by remember { mutableStateOf<LensMedia?>(null) }
     val currentRecording by rememberUpdatedState(recording)
+    // CameraX releases camera use cases with the activity lifecycle, but the
+    // countdown and active recording also need explicit cancellation on stop.
+    DisposableEffect(lifecycle) {
+        val stopObserver = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_STOP) {
+                shutterTimer?.cancel()
+                shutterTimer = null
+                countdown = 0
+                if (isRecording) {
+                    runCatching { currentRecording?.stop() }
+                }
+            }
+        }
+        lifecycle.lifecycle.addObserver(stopObserver)
+        onDispose { lifecycle.lifecycle.removeObserver(stopObserver) }
+    }
     DisposableEffect(Unit) { onDispose {
         shutterTimer?.cancel()
         currentRecording?.stop()
@@ -469,6 +485,15 @@ private fun LensigoApplication() {
         vendorEffect = false
         proValues = ProValues()
     }
+    // Temporary file creation can fail when internal storage is full or
+    // inaccessible. Never crash the camera UI while starting a capture.
+    fun createCaptureTempFile(prefix: String): File? = try {
+        File.createTempFile(prefix, ".jpg", context.cacheDir)
+    } catch (error: Exception) {
+        processing = false
+        Toast.makeText(context, "Nema dovoljno prostora za snimanje", Toast.LENGTH_LONG).show()
+        null
+    }
     fun finishPanorama() {
         if (processing || panoramaParts.size < PanoramaComposer.MIN_FRAMES) return
         if (!hasStoragePermission) { requestPermissions(); return }
@@ -491,7 +516,7 @@ private fun LensigoApplication() {
         if (!hasStoragePermission) { requestPermissions(); return }
         val capture = photoCapture ?: return
         processing = true
-        val file = File.createTempFile("lensigo_panorama_", ".jpg", context.cacheDir)
+        val file = createCaptureTempFile("lensigo_panorama_") ?: return
         capture.takePicture(ImageCapture.OutputFileOptions.Builder(file).build(),
             ContextCompat.getMainExecutor(context),
             object : ImageCapture.OnImageSavedCallback {
@@ -512,7 +537,7 @@ private fun LensigoApplication() {
         if (!hasStoragePermission) { requestPermissions(); return }
         val capture = photoCapture ?: return
         processing = true
-        val file = File.createTempFile("lensigo_dual_", ".jpg", context.cacheDir)
+        val file = createCaptureTempFile("lensigo_dual_") ?: return
         capture.takePicture(ImageCapture.OutputFileOptions.Builder(file).build(),
             ContextCompat.getMainExecutor(context),
             object : ImageCapture.OnImageSavedCallback {
@@ -544,7 +569,14 @@ private fun LensigoApplication() {
                         }
                     }
                     if (frontCapture != null) {
-                        val selfie = File.createTempFile("lensigo_selfie_", ".jpg", context.cacheDir)
+                        val selfie = createCaptureTempFile("lensigo_selfie_")
+                        if (selfie == null) {
+                            file.delete()
+                            firstDualPhoto?.delete()
+                            firstDualPhoto = null
+                            dualStep = 0
+                            return
+                        }
                         frontCapture.takePicture(ImageCapture.OutputFileOptions.Builder(selfie).build(),
                             ContextCompat.getMainExecutor(context),
                             object : ImageCapture.OnImageSavedCallback {
@@ -574,7 +606,7 @@ private fun LensigoApplication() {
         if (!hasStoragePermission) { requestPermissions(); return }
         val capture = photoCapture ?: return
         processing = true
-        val file = File.createTempFile("lensigo_capture_", ".jpg", context.cacheDir)
+        val file = createCaptureTempFile("lensigo_capture_") ?: return
         capture.takePicture(ImageCapture.OutputFileOptions.Builder(file).build(),
             ContextCompat.getMainExecutor(context), object : ImageCapture.OnImageSavedCallback {
                 override fun onImageSaved(output: ImageCapture.OutputFileResults) {
@@ -627,6 +659,12 @@ private fun LensigoApplication() {
                     isRecording = false
                     recording = null
                     if (event.hasError()) {
+                        // CameraX can leave partial media behind after a failed
+                        // recording. Only remove the URI created by this session.
+                        val output = event.outputResults.outputUri
+                        if (output != Uri.EMPTY) {
+                            runCatching { context.contentResolver.delete(output, null, null) }
+                        }
                         Toast.makeText(context, "Snimanje nije uspjelo: " + event.error,
                             Toast.LENGTH_LONG).show()
                     } else {
