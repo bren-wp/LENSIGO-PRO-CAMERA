@@ -868,24 +868,10 @@ private fun LensigoApplication() {
                         }
                         if (mode == CameraMode.FILTERS) {
                             Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 76.dp)) {
-                                LazyRow(
-                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                    contentPadding = PaddingValues(horizontal = 10.dp)
-                                ) {
-                                    items(LensFilter.entries) { item ->
-                                        FilterChip(
-                                            selected = filter == item,
-                                            onClick = { filter = item },
-                                            label = { Text(item.title, fontSize = 12.sp) },
-                                            colors = FilterChipDefaults.filterChipColors(
-                                                selectedContainerColor = Cyan,
-                                                selectedLabelColor = Black,
-                                                containerColor = Black.copy(alpha = .74f),
-                                                labelColor = White
-                                            )
-                                        )
-                                    }
-                                }
+                                LensigoFilterPreviewStrip(
+                                    selected = filter, intensity = intensity,
+                                    onSelected = { filter = it }
+                                )
                                 Slider(value = intensity, onValueChange = { intensity = it },
                                     modifier = Modifier.padding(horizontal = 23.dp).height(32.dp))
                             }

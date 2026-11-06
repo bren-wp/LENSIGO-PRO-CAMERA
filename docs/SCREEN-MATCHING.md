@@ -162,3 +162,9 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - Source `izvoz/mobitel/10_panorama.png`: white translucent central guidance rectangle with the rightward movement instruction, a wide horizontal indicator and a large white arrow. The guidance now follows these elements; the line fill reflects `frameCount / MAX_FRAMES`, not an invented 100% sample progress. Existing Finish/Cancel and 2–5 frame logic remain functional.
 - Source `izvoz/mobitel/11_dual.png`: front-view PiP in the upper-right of the main camera image. CameraX's actual concurrent view remains visible only when hardware supports it. Removed redundant footer text during concurrent operation; numbered guidance remains visible for the honest sequential fallback.
 - Not verified: panorama perspective alignment, simultaneous still exposure across dual sensors, OEM CameraX camera behavior, or exact 1:1 Android screenshots. Both modes retain existing documented limitations.
+
+## 12 Filters — genuine, source-backed thumbnail strip
+
+- The reference 12_filters.png shows small photographic previews across the bottom of the camera. The old text-only chips are replaced with locally produced photographic previews, using the real source-provided `assets/photo.jpg` optimized for the Home asset. Each preview passes through the **same FilterEngine** and selected intensity as final JPEG processing, avoiding misleading arbitrary color swatches.
+- All 12 existing filters remain navigable via a horizontally scrolling strip. The chosen filter is outlined in cyan; previews render off the UI thread with a debounce to limit work while the user drags intensity. No external images, network permissions or cloud processing are introduced.
+- Remaining: exact image, font and spacing comparison with original mobile/tablet PNG; actual CameraX preview transformation and low-RAM/long-session profiling are not yet device-verified.
