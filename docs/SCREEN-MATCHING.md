@@ -84,3 +84,10 @@ Ponovno je upotrijebljen originalni Python/CairoSVG generator iz referentnog Bre
 Uspoređene su korisnikove mobilne reference 1080 × 2400. Dodani su odgovarajući tamnoplavi layout, bijela tipografija, cijan simbol objektiva i grupirane informacije. Na zaslonu privatnosti četiri su reda i informativni panel; na zaslonu O aplikaciji četiri su informacije, aktivni navigacijski redovi i oznaka Brendigo. Za razliku od statičnih mockupova, poveznice otvaraju stvarne stranice ili Android dozvole. Dodana je zasebna stranica licenci.
 
 UI je responzivan kroz Compose `widthIn(max=540.dp)`, okomito pomicanje i `heightIn`, no **vizualno 1:1 nije potvrđeno** bez stvarnih snimki aplikacije na telefonu i tabletu. Izvorna 512×512 launcher slika reproducira se RGB-piksel-po-piksel; Android maskiranje može promijeniti prikaz ikone na početnom zaslonu.
+
+## Nastavak nakon v0.7.21 — Splash i dozvole
+
+- **01 Splash:** standardni raspored i izvorni LENSIGO simbol ostaju nepromijenjeni, a uski i niski prozori dobivaju kompaktniji raspored koji se može pomicati umjesto odrezivanja podnožja.
+- **03 Dozvole:** zahtjevi za kameru i pohranu sada su zasebne akcije. Na Androidu 10+ vlastite snimke ne traže zastarjelu dozvolu za pohranu; na Androidu 7–9 ostaje zaseban zahtjev.
+- **Izdavanja:** GitHub CI broj izdanja sada je usklađen s Android `versionName` i rastućim `versionCode`, umjesto da svi binarni paketi zadržavaju 0.7.0.
+- **Nije potvrđeno:** 1:1 usporedba sa stvarnim 1080×2400 i 1600×2560 Android snimkama, velike pristupačne veličine fonta, ponašanje CameraX na fizičkim uređajima i potpisani Play AAB.

@@ -179,6 +179,12 @@ private fun LensigoApplication() {
         hasStoragePermission = Build.VERSION.SDK_INT >= 29 ||
             ContextCompat.checkSelfPermission(context, Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED
     }
+    val requestCameraOnly = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        hasCameraPermission = it
+    }
+    val requestStorageOnly = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
+        hasStoragePermission = Build.VERSION.SDK_INT >= 29 || it
+    }
     val requestMic = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {
         hasMicPermission = it
     }
@@ -652,8 +658,14 @@ private fun LensigoApplication() {
                 Screen.PERMISSIONS -> LensigoPermissions(
                     cameraGranted = hasCameraPermission,
                     storageGranted = hasStoragePermission,
+                    storageRequired = Build.VERSION.SDK_INT < 29,
                     micGranted = hasMicPermission,
-                    onCamera = ::requestPermissions,
+                    onCamera = { requestCameraOnly.launch(Manifest.permission.CAMERA) },
+                    onStorage = {
+                        if (Build.VERSION.SDK_INT < 29) {
+                            requestStorageOnly.launch(Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                        }
+                    },
                     onMic = { requestMic.launch(Manifest.permission.RECORD_AUDIO) },
                     onContinue = {
                         prefs.edit().putBoolean("onboarded", true).apply()

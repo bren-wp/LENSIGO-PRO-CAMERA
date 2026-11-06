@@ -1,6 +1,8 @@
 package com.brendigo.lensigo
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -30,31 +32,64 @@ private val White = Color(0xFFF8FBFF)
 
 @Composable
 fun LensigoSplash() {
-    Box(Modifier.fillMaxSize().background(Night)) {
-        Column(
-            Modifier.align(Alignment.Center).offset(y = (-70).dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            LensigoBrandMark(modifier = Modifier.size(134.dp))
-            Spacer(Modifier.height(13.dp))
-            Text("LENSIGO", fontWeight = FontWeight.Bold, fontSize = 46.sp,
-                color = White, letterSpacing = 1.sp)
-            Text("P R O   C A M E R A", fontWeight = FontWeight.Bold,
-                fontSize = 15.sp, color = Accent)
-            Spacer(Modifier.height(8.dp))
-            Text("B Y   B R E N D I G O", fontSize = 10.sp,
-                color = Muted, fontWeight = FontWeight.Bold)
-            Spacer(Modifier.height(62.dp))
-            Text("Svaki kadar. Tvoja priča.", color = White, fontSize = 17.sp)
+    BoxWithConstraints(Modifier.fillMaxSize().background(Night)) {
+        // The standard phone layout keeps the reference geometry. Very short or
+        // narrow viewports must scroll rather than clipping the brand or footer.
+        val compact = maxHeight < 600.dp || maxWidth < 350.dp
+        if (compact) {
+            Column(
+                Modifier.fillMaxSize().verticalScroll(rememberScrollState())
+                    .heightIn(min = maxHeight)
+                    .padding(horizontal = 16.dp, vertical = 20.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.SpaceEvenly
+            ) {
+                SplashIdentity(compact = true)
+                SplashFooter(compact = true)
+            }
+        } else {
+            SplashIdentity(
+                compact = false,
+                modifier = Modifier.align(Alignment.Center).offset(y = (-70).dp)
+            )
+            SplashFooter(
+                compact = false,
+                modifier = Modifier.align(Alignment.BottomCenter).padding(bottom = 42.dp)
+            )
         }
-        Column(Modifier.align(Alignment.BottomCenter).padding(bottom = 42.dp),
-            horizontalAlignment = Alignment.CenterHorizontally) {
-            CircularProgressIndicator(Modifier.size(25.dp),
-                color = Accent, strokeWidth = 2.dp)
-            Spacer(Modifier.height(25.dp))
-            Text("BRENDIGO.COM", fontSize = 10.sp, color = Muted,
-                fontWeight = FontWeight.Bold)
-        }
+    }
+}
+
+@Composable
+private fun SplashIdentity(compact: Boolean, modifier: Modifier = Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        LensigoBrandMark(modifier = Modifier.size(if (compact) 100.dp else 134.dp))
+        Spacer(Modifier.height(if (compact) 8.dp else 13.dp))
+        Text("LENSIGO", fontWeight = FontWeight.Bold,
+            fontSize = if (compact) 36.sp else 46.sp,
+            color = White, letterSpacing = 1.sp)
+        Text("P R O   C A M E R A", fontWeight = FontWeight.Bold,
+            fontSize = if (compact) 12.sp else 15.sp, color = Accent)
+        Spacer(Modifier.height(8.dp))
+        Text("B Y   B R E N D I G O", fontSize = 10.sp,
+            color = Muted, fontWeight = FontWeight.Bold)
+        Spacer(Modifier.height(if (compact) 26.dp else 62.dp))
+        Text("Svaki kadar. Tvoja priča.", color = White,
+            fontSize = if (compact) 15.sp else 17.sp,
+            textAlign = TextAlign.Center)
+    }
+}
+
+@Composable
+private fun SplashFooter(compact: Boolean, modifier: Modifier = Modifier) {
+    Column(modifier, horizontalAlignment = Alignment.CenterHorizontally) {
+        CircularProgressIndicator(
+            Modifier.size(if (compact) 22.dp else 25.dp),
+            color = Accent, strokeWidth = 2.dp
+        )
+        Spacer(Modifier.height(if (compact) 14.dp else 25.dp))
+        Text("BRENDIGO.COM", fontSize = 10.sp, color = Muted,
+            fontWeight = FontWeight.Bold)
     }
 }
 
@@ -94,8 +129,10 @@ fun LensigoWelcome(onContinue: () -> Unit) {
 fun LensigoPermissions(
     cameraGranted: Boolean,
     storageGranted: Boolean,
+    storageRequired: Boolean,
     micGranted: Boolean,
     onCamera: () -> Unit,
+    onStorage: () -> Unit,
     onMic: () -> Unit,
     onContinue: () -> Unit
 ) {
@@ -107,8 +144,10 @@ fun LensigoPermissions(
         Spacer(Modifier.height(18.dp))
         PermissionRow("Kamera", "Za fotografije i video", cameraGranted, onCamera,
             icon = { Icon(Icons.Default.CameraAlt, null, tint = Accent) })
-        PermissionRow("Spremanje", "Android 7–9 zahtijeva zasebnu dozvolu",
-            storageGranted, onCamera,
+        PermissionRow("Spremanje",
+            if (storageRequired) "Android 7–9 zahtijeva zasebnu dozvolu"
+            else "Za vlastite snimke posebna dozvola nije potrebna",
+            storageGranted, onStorage, notRequired = !storageRequired,
             icon = { Icon(Icons.Default.Save, null, tint = Accent) })
         PermissionRow("Mikrofon", "Neobavezan: samo video sa zvukom",
             micGranted, onMic, icon = { Icon(Icons.Default.Mic, null, tint = Accent) })
@@ -125,7 +164,8 @@ fun LensigoPermissions(
 @Composable
 private fun PermissionRow(
     title: String, detail: String, granted: Boolean,
-    onClick: () -> Unit, icon: @Composable () -> Unit
+    onClick: () -> Unit, notRequired: Boolean = false,
+    icon: @Composable () -> Unit
 ) {
     Row(Modifier.fillMaxWidth().background(Color(0xFF102E45), RoundedCornerShape(12.dp))
         .padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
@@ -135,9 +175,10 @@ private fun PermissionRow(
             Text(title, color = White, fontWeight = FontWeight.Bold)
             Text(detail, color = Muted, fontSize = 11.sp)
         }
-        TextButton(onClick = onClick, enabled = !granted) {
-            Text(if (granted) "ODOBRENO" else "DOPUSTI", fontSize = 11.sp,
-                color = if (granted) Accent else White)
+        TextButton(onClick = onClick, enabled = !granted && !notRequired) {
+            Text(if (notRequired) "NIJE POTREBNA"
+                else if (granted) "ODOBRENO" else "DOPUSTI",
+                fontSize = 11.sp, color = if (notRequired || granted) Accent else White)
         }
     }
 }

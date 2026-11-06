@@ -2,6 +2,9 @@ plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.plugin.compose")
 }
+// GitHub preview tag v0.7.N must match the binary's Android versionCode/name.
+// Local builds retain the existing fallback version when not running in CI.
+val previewRun = System.getenv("GITHUB_RUN_NUMBER")?.toIntOrNull()?.takeIf { it > 0 }
 android {
     namespace = "com.brendigo.lensigo"
     compileSdk = 37
@@ -9,8 +12,8 @@ android {
         applicationId = "com.brendigo.lensigo"
         minSdk = 24
         targetSdk = 36
-        versionCode = 7
-        versionName = "0.7.0"
+        versionCode = previewRun ?: 7
+        versionName = "0.7.${previewRun ?: 0}"
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     buildFeatures { compose = true; buildConfig = true }
