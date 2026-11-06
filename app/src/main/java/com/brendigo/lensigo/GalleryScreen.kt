@@ -211,12 +211,15 @@ fun ViewerScreen(
                 context.contentResolver.delete(item.uri, null, null)
                 onBack()
             }
-        } catch (e: android.app.RecoverableSecurityException) {
-            if (Build.VERSION.SDK_INT >= 29) deleteLauncher.launch(
-                IntentSenderRequest.Builder(e.userAction.actionIntent.intentSender).build())
         } catch (e: Exception) {
-            Toast.makeText(context, "Brisanje nije moguće: " + e.localizedMessage,
-                Toast.LENGTH_LONG).show()
+            if (Build.VERSION.SDK_INT >= 29 &&
+                e is android.app.RecoverableSecurityException) {
+                deleteLauncher.launch(
+                    IntentSenderRequest.Builder(e.userAction.actionIntent.intentSender).build())
+            } else {
+                Toast.makeText(context, "Brisanje nije moguće: " + e.localizedMessage,
+                    Toast.LENGTH_LONG).show()
+            }
         }
     }
     if (confirmDelete) AlertDialog(
