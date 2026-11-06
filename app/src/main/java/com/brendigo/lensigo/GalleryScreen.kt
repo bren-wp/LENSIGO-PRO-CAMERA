@@ -37,7 +37,6 @@ import androidx.compose.material.icons.filled.WbSunny
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.foundation.border
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
