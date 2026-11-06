@@ -178,6 +178,7 @@ private fun LensigoApplication() {
     }
     var aspectWide by remember { mutableStateOf(photoAspectWide) }
     var preferSD by remember { mutableStateOf(prefs.getBoolean("video_sd", true)) }
+    var recordAudio by remember { mutableStateOf(prefs.getBoolean("record_audio", true)) }
     var lowMemory by remember { mutableStateOf(prefs.getBoolean("low_memory", true)) }
     var softenNoise by remember { mutableStateOf(prefs.getBoolean("noise", false)) }
     var sharpen by remember { mutableStateOf(prefs.getBoolean("sharpen", false)) }
@@ -690,7 +691,9 @@ private fun LensigoApplication() {
                 context.contentResolver, MediaStore.Video.Media.EXTERNAL_CONTENT_URI
             ).setContentValues(values).build()
             val pending = capture.output.prepareRecording(context, options)
-            val configured = if (hasMicPermission) pending.withAudioEnabled() else pending
+            val configured = if (CameraControlRules.recordAudioEnabled(
+                recordAudio, hasMicPermission
+            )) pending.withAudioEnabled() else pending
             recordingDurationNanos = 0L
             recording = configured.start(ContextCompat.getMainExecutor(context)) { event ->
                 if (event is VideoRecordEvent.Status) {
@@ -1242,6 +1245,7 @@ private fun LensigoApplication() {
                     preferSD = preferSD,
                     noise = softenNoise, sharpen = sharpen,
                     lowMemory = lowMemory, hasMicrophone = hasMicPermission,
+                    recordAudio = recordAudio,
                     onQuality = { jpegQuality = it },
                     onQualityFinished = {
                         prefs.edit().putInt("quality", jpegQuality).apply()
@@ -1263,11 +1267,12 @@ private fun LensigoApplication() {
                         if (!hasMicPermission) {
                             requestMic.launch(Manifest.permission.RECORD_AUDIO)
                         } else {
-                            runCatching {
-                                context.startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
-                                    Uri.fromParts("package", context.packageName, null)))
-                            }
+                            openAppSystemSettings()
                         }
+                    },
+                    onRecordAudio = {
+                        recordAudio = it
+                        prefs.edit().putBoolean("record_audio", it).apply()
                     },
                     onBack = { moveTo(Screen.SETTINGS) }
                 )

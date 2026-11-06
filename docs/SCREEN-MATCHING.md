@@ -295,3 +295,11 @@ Provjerene su izvorne reference `izvoz/mobitel/07_pro.png` do `12_filters.png` p
 - **12 Filters:** lokalno generirane sličice sada recikliraju nativne bitmap-e pri zamjeni intenziteta ili izlasku s ekrana, umjesto zadržavanja sve većeg skupa filtara u memoriji. 12 filtara i stvarni JPEG izvoz ostaju isti.
 - **13–19 ponovna provjera:** galerija prikazuje samo vlastite MediaStore zapise, Viewer zumira fotografije, Editor sprema kopiju bez prepisivanja izvornika, a Settings/Privacy/About imaju stvarno povezane navigacijske akcije. Potrebne su daljnje korekcije prema referenci za kontrolu zvuka videa i izvedive postavke.
 - Ne tvrditi 1:1 dok ne postoje Android screencap datoteke i diferencijalna mjerenja za obadva uređaja.
+
+## 06 Video / 17 Postavke kamere / 18 Privatnost — kontrola zvuka snimanja
+
+- U prethodnom kodu `RECORD_AUDIO` dozvola automatski je aktivirala zvuk pri svakom videosnimanju. Izvorna referenca `17_camera-settings.png` prikazuje zaseban **Snimanje zvuka** prekidač.
+- Postavljen je lokalni `record_audio` preferencijski ključ (početno uključen samo ako je stvarna dozvola već izdana). Korisnik sada može snimati **video bez zvuka** i kad ima dozvolu za mikrofon, bez potrebe za sustavnim oduzimanjem dozvole.
+- Prekidač za video zvuk u Postavkama kamere fizički mijenja `withAudioEnabled()` u CameraX. Kad dozvola nedostaje, pokušaj uključivanja traži izvorno Android dopuštenje. Nijedan audio stream nije uključen ako korisnik onemogući zvuk.
+- Tekst Privatnosti sada točno objašnjava izbor bez zvuka i uvjete za mikrofon; nije dodana mrežna komunikacija, analitika ni usluga treće strane.
+- Testirana je logika uključivanja zvuka (korisnička postavka × sustavna dozvola) JVM testovima; fizičko slušanje videa, oduzimanje dozvole tijekom snimanja i pauza aplikacije ostaju dio device-test matrice.

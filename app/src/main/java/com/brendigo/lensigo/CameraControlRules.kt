@@ -7,6 +7,10 @@ import java.util.Locale
  * and never claim support for zoom ratios outside the active lens range.
  */
 internal object CameraControlRules {
+    // Microphone permission alone must never override the user's preference.
+    fun recordAudioEnabled(enabledByUser: Boolean, hasPermission: Boolean): Boolean =
+        enabledByUser && hasPermission
+
     fun shutterEnabled(
         permission: Boolean, processing: Boolean, countdown: Int,
         videoMode: Boolean, recording: Boolean, captureReady: Boolean

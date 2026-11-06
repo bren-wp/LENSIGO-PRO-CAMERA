@@ -6,6 +6,12 @@ import org.junit.Assert.assertTrue
 import org.junit.Test
 
 class CameraControlRulesTest {
+    @Test fun audioCanBeDisabledWithoutRevokingMicrophonePermission() {
+        assertFalse(CameraControlRules.recordAudioEnabled(false, true))
+        assertFalse(CameraControlRules.recordAudioEnabled(true, false))
+        assertTrue(CameraControlRules.recordAudioEnabled(true, true))
+    }
+
     @Test fun shutterIsDisabledUntilCaptureUseCaseIsReady() {
         assertFalse(CameraControlRules.shutterEnabled(true,false,0,false,false,false))
         assertTrue(CameraControlRules.shutterEnabled(true,false,0,false,false,true))

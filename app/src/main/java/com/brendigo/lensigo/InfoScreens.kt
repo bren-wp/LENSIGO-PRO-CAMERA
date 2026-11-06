@@ -138,7 +138,8 @@ fun LensigoPrivacyScreen(
                     Text("Obrada bez poslužitelja.", fontWeight = FontWeight.SemiBold,
                         fontSize = 14.sp, color = White)
                     Text("LENSIGO nema internetsku dozvolu ni ugrađenu analitiku. " +
-                        "Za fotografiranje treba kameru, a za zvuk videa mikrofon. " +
+                        "Za fotografiranje treba kameru. Zvuk videa moguće je isključiti " +
+                        "u Postavkama kamere, a za uključivanje je potrebna dozvola mikrofona. " +
                         "Na Androidu 7–9 spremanje javnih snimki zahtijeva dozvolu pohrane.",
                         color = Secondary, fontSize = 12.sp, lineHeight = 17.sp)
                 }

@@ -204,6 +204,7 @@ internal fun LensigoCameraSettingsScreen(
     sharpen: Boolean,
     lowMemory: Boolean,
     hasMicrophone: Boolean,
+    recordAudio: Boolean,
     onQuality: (Int) -> Unit,
     onQualityFinished: () -> Unit,
     onPhotoAspect: (Boolean) -> Unit,
@@ -213,6 +214,7 @@ internal fun LensigoCameraSettingsScreen(
     onSharpen: (Boolean) -> Unit,
     onLowMemory: (Boolean) -> Unit,
     onMicrophone: () -> Unit,
+    onRecordAudio: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
     Column(Modifier.fillMaxSize().background(LensigoReferenceBackground)) {
@@ -262,9 +264,14 @@ internal fun LensigoCameraSettingsScreen(
                         onToggle = { hd -> onSD(!hd) })
                     SettingsDivider()
                     SettingsItem(Icons.Default.Mic, "Snimanje zvuka",
-                        "Dozvola za mikrofon",
-                        if (hasMicrophone) "Dopušten" else "Dopusti",
-                        onClick = onMicrophone)
+                        if (hasMicrophone) "Mikrofon" else "Potrebna je dozvola za mikrofon",
+                        checked = hasMicrophone && recordAudio,
+                        onToggle = { enabled ->
+                            if (enabled && !hasMicrophone) {
+                                onRecordAudio(true)
+                                onMicrophone()
+                            } else onRecordAudio(enabled)
+                        })
                 }
                 Spacer(Modifier.height(28.dp))
             }
