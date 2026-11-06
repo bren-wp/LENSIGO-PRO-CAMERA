@@ -57,9 +57,12 @@ Originalni korisnički referentni paket sadrži 19 mobilnih i 19 tabletnih konce
 - **Package** `com.brendigo.lensigo`, minSdk 24, targetSdk 36.
 
 ```shell
+python -m pip install Pillow==12.3.0 numpy==2.3.5 CairoSVG==2.8.2
 gradle :app:assembleDebug
 gradle :app:bundleRelease
 ```
+
+Gradle automatski regenerira `lensigo_launcher.png` prije izgradnje na lokalnom stroju (potrebni su Python 3 i navedene biblioteke). Sama ikona neće biti pohranjena u repozitorij kao binarna datoteka, ali se deterministički uključuje u APK i AAB. CI također provjerava SHA-256 piksela.
 
 GitHub Actions nakon **uspješnog** builda objavljuje novi preview Release s `app-debug.apk` (testni APK) i `app-release.aab` (nepotpisani bundle). Za produkcijsku objavu potreban je zaseban sigurni signing workflow i testiranje stvarnih uređaja.
 

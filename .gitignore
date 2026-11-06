@@ -6,3 +6,6 @@
 *.iml
 *.keystore
 *.jks
+
+# Generated from approved original logo source during Gradle build
+app/src/main/res/drawable-nodpi/lensigo_launcher.png

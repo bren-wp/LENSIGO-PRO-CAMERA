@@ -34,3 +34,18 @@ dependencies {
     implementation("androidx.camera:camera-video:1.6.2")
     implementation("androidx.camera:camera-extensions:1.6.2")
 }
+
+/**
+ * Generate the reference-identical launcher asset before Android resource merging.
+ * Python 3 + Pillow 12.3, numpy 2.3.5, CairoSVG 2.8.2 are required on build hosts.
+ */
+val generateLensigoLauncher by tasks.registering(Exec::class) {
+    group = "branding"
+    description = "Regenerates the approved 512px launch icon"
+    workingDir = rootProject.projectDir
+    commandLine("python", "tools/generate_launcher.py",
+        "app/src/main/res/drawable-nodpi/lensigo_launcher.png")
+    inputs.file(rootProject.file("tools/generate_launcher.py"))
+    outputs.file(file("src/main/res/drawable-nodpi/lensigo_launcher.png"))
+}
+tasks.named("preBuild").configure { dependsOn(generateLensigoLauncher) }
