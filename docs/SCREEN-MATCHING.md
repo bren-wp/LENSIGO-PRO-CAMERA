@@ -125,3 +125,10 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - The bottom-left gallery shortcut displays a bounded, locally decoded last-photograph thumbnail after capture. The image decoding uses Dispatchers.IO; without saved media the shortcut remains an icon, not a mockup.
 - The shutter has contextual screen-reader actions for still photo or starting/stopping video.
 - Pending: device screenshots and actual OEM autofocus/lens testing. Photo-mode HDR has not been implemented merely to match static reference text.
+
+## References 02 Welcome / 03 Permissions — visual and functional alignment
+
+- Source: `izvoz/mobitel/02_onboarding.png`, `03_permissions.png` and corresponding 1600×2560 tablet PNG files. Standard Welcome cards retain the navy panel, but the aperture is reduced to approximately the reference size (112dp) and page indicators use real filled/outlined circles.
+- Welcome/Permissions now show functional back and system settings actions: first-screen back exits, the Permissions back returns to Welcome, and settings opens Android's real app settings rather than an inaccessible or mock dialog.
+- The Permissions layout now follows the reference's camera/microphone/media/location sequence. Location is explicitly **not collected or written to EXIF**, rather than promising a permission-dependent feature that the Android app has not implemented. Android 10+ still does not request legacy storage permission.
+- **Still unverified:** real screenshots / pixel-diff, large font layout and Android 7–9 permission round-trip. This is reference-driven implementation, not confirmed 1:1.

@@ -13,6 +13,9 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CameraAlt
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Save
+import androidx.compose.material.icons.filled.Folder
+import androidx.compose.material.icons.filled.Shield
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -137,17 +140,50 @@ private fun SplashFooter(compact: Boolean, modifier: Modifier = Modifier) {
 }
 
 @Composable
-fun LensigoWelcome(onContinue: () -> Unit) {
-    BoxWithConstraints(Modifier.fillMaxSize().background(Night)) {
+private fun OnboardingHeader(title: String, onBack: () -> Unit, onSettings: () -> Unit) {
+    Row(
+        Modifier.fillMaxWidth().height(65.dp),
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        IconButton(onClick = onBack, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.Default.ArrowBack, contentDescription = "Natrag", tint = White)
+        }
+        Text(title, fontSize = 18.sp, color = White,
+            fontWeight = FontWeight.Bold, textAlign = TextAlign.Center,
+            modifier = Modifier.weight(1f))
+        IconButton(onClick = onSettings, modifier = Modifier.size(48.dp)) {
+            Icon(Icons.Default.Settings, contentDescription = "Postavke aplikacije", tint = White)
+        }
+    }
+}
+
+@Composable
+private fun OnboardingDots() {
+    Row(
+        Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.Center,
+        verticalAlignment = Alignment.CenterVertically
+    ) {
+        Box(Modifier.size(7.dp).background(Accent, CircleShape))
+        Spacer(Modifier.width(14.dp))
+        repeat(2) { index ->
+            Box(Modifier.size(7.dp).border(1.dp, Accent, CircleShape))
+            if (index == 0) Spacer(Modifier.width(14.dp))
+        }
+    }
+}
+
+@Composable
+fun LensigoWelcome(onBack: () -> Unit, onSettings: () -> Unit, onContinue: () -> Unit) {
+    BoxWithConstraints(Modifier.fillMaxSize().background(Brush.verticalGradient(
+        listOf(Night, Color(0xFF0A1B2C), Color(0xFF08111E))
+    ))) {
         val compact = maxHeight < 680.dp || maxWidth < 350.dp
         Column(
             Modifier.fillMaxSize()
                 .then(if (compact) Modifier.verticalScroll(rememberScrollState()) else Modifier)
                 .padding(18.dp)
         ) {
-            Box(Modifier.fillMaxWidth().height(65.dp), contentAlignment = Alignment.Center) {
-                Text("DOBRO DOŠLI", fontSize = 18.sp, color = White, fontWeight = FontWeight.Bold)
-            }
+            OnboardingHeader("DOBRO DOŠLI", onBack, onSettings)
             Box(
                 Modifier.fillMaxWidth()
                     .then(if (compact) Modifier.height(200.dp) else Modifier.weight(1f))
@@ -155,7 +191,7 @@ fun LensigoWelcome(onContinue: () -> Unit) {
                     .background(Color(0xFF0C2A40), RoundedCornerShape(24.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                LensigoBrandMark(modifier = Modifier.size(if (compact) 110.dp else 154.dp))
+                LensigoBrandMark(Modifier.size(if (compact) 90.dp else 112.dp))
             }
             Spacer(Modifier.height(if (compact) 16.dp else 24.dp))
             Text("LENSIGO  ·  PRO CAMERA", fontSize = 13.sp, color = Accent)
@@ -165,8 +201,7 @@ fun LensigoWelcome(onContinue: () -> Unit) {
             Spacer(Modifier.height(if (compact) 12.dp else 20.dp))
             Text("Profesionalna kamera za svaki trenutak.", fontSize = 15.sp, color = Muted)
             Spacer(Modifier.height(if (compact) 20.dp else 32.dp))
-            Text("●  ○  ○", modifier = Modifier.fillMaxWidth(),
-                color = Accent, textAlign = TextAlign.Center, fontSize = 14.sp)
+            OnboardingDots()
             Spacer(Modifier.height(if (compact) 18.dp else 30.dp))
             Button(onClick = onContinue,
                 modifier = Modifier.fillMaxWidth().height(58.dp),
@@ -187,31 +222,52 @@ fun LensigoPermissions(
     onCamera: () -> Unit,
     onStorage: () -> Unit,
     onMic: () -> Unit,
+    onBack: () -> Unit,
+    onSettings: () -> Unit,
     onContinue: () -> Unit
 ) {
-    BoxWithConstraints(Modifier.fillMaxSize().background(Night)) {
-        val compact = maxHeight < 630.dp || maxWidth < 350.dp
+    BoxWithConstraints(Modifier.fillMaxSize().background(Brush.verticalGradient(
+        listOf(Night, Color(0xFF0A1B2C), Color(0xFF08111E))
+    ))) {
+        val compact = maxHeight < 710.dp || maxWidth < 350.dp
         Column(
             Modifier.fillMaxSize()
                 .then(if (compact) Modifier.verticalScroll(rememberScrollState()) else Modifier)
-                .padding(20.dp),
+                .padding(18.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text("DOZVOLE APLIKACIJE", fontSize = 19.sp, fontWeight = FontWeight.Bold, color = White)
-            Text("Odaberi pristup koji želiš dati. Obrada i spremanje ostaju na uređaju.",
-                fontSize = 14.sp, color = Muted)
-            Spacer(Modifier.height(18.dp))
-            PermissionRow("Kamera", "Za fotografije i video", cameraGranted, onCamera,
+            OnboardingHeader("Dopuštenja", onBack, onSettings)
+            Spacer(Modifier.height(2.dp))
+            Text("Spremno za snimanje?", fontSize = 27.sp,
+                fontWeight = FontWeight.Bold, color = White)
+            Text("Odaberi potrebna dopuštenja.", fontSize = 14.sp, color = Muted)
+            Spacer(Modifier.height(12.dp))
+            PermissionRow("Kamera", "Fotografiranje i prikaz uživo", cameraGranted, onCamera,
                 icon = { Icon(Icons.Default.CameraAlt, null, tint = Accent) })
-            PermissionRow("Spremanje",
-                if (storageRequired) "Android 7–9 zahtijeva zasebnu dozvolu"
-                else "Za vlastite snimke posebna dozvola nije potrebna",
-                storageGranted, onStorage, notRequired = !storageRequired,
-                icon = { Icon(Icons.Default.Save, null, tint = Accent) })
-            PermissionRow("Mikrofon", "Neobavezan: samo video sa zvukom",
+            PermissionRow("Mikrofon", "Zvuk za videozapise (neobvezno)",
                 micGranted, onMic, icon = { Icon(Icons.Default.Mic, null, tint = Accent) })
+            PermissionRow("Medijske datoteke",
+                if (storageRequired) "Spremanje vlastitih snimki na Androidu 7–9"
+                else "Spremanje vlastitih snimki bez dodatne dozvole",
+                storageGranted, onStorage, notRequired = !storageRequired,
+                icon = { Icon(Icons.Default.Folder, null, tint = Accent) })
+            Row(
+                Modifier.fillMaxWidth().heightIn(min = 72.dp)
+                    .background(Color(0xFF102E45), RoundedCornerShape(12.dp))
+                    .border(1.dp, Color(0xFF25516B), RoundedCornerShape(12.dp))
+                    .padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Icon(Icons.Default.Shield, contentDescription = null, tint = Accent)
+                Spacer(Modifier.width(12.dp))
+                Column {
+                    Text("Lokacija", color = White, fontWeight = FontWeight.Bold)
+                    Text("Ne prikuplja se niti dodaje fotografijama.",
+                        color = Muted, fontSize = 11.sp)
+                }
+            }
             Spacer(if (compact) Modifier.height(8.dp) else Modifier.weight(1f))
-            Text("LENSIGO nema oglase ni mrežnu dozvolu.", color = Muted, fontSize = 12.sp)
+            Text("Bez računa, oglasa i internetske dozvole.", color = Muted, fontSize = 12.sp)
             Button(onClick = onContinue, modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(12.dp),
                 colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0984AD))) {
@@ -227,7 +283,9 @@ private fun PermissionRow(
     onClick: () -> Unit, notRequired: Boolean = false,
     icon: @Composable () -> Unit
 ) {
-    Row(Modifier.fillMaxWidth().background(Color(0xFF102E45), RoundedCornerShape(12.dp))
+    Row(Modifier.fillMaxWidth().heightIn(min = 72.dp)
+        .background(Color(0xFF102E45), RoundedCornerShape(12.dp))
+        .border(1.dp, Color(0xFF25516B), RoundedCornerShape(12.dp))
         .padding(12.dp), verticalAlignment = Alignment.CenterVertically) {
         icon()
         Spacer(Modifier.width(12.dp))

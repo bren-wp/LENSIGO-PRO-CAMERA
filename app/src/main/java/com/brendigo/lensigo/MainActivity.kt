@@ -214,6 +214,16 @@ private fun LensigoApplication() {
             arrayOf(Manifest.permission.CAMERA, Manifest.permission.WRITE_EXTERNAL_STORAGE)
             else arrayOf(Manifest.permission.CAMERA))
     }
+    fun openAppSystemSettings() {
+        runCatching {
+            context.startActivity(Intent(
+                Settings.ACTION_APPLICATION_DETAILS_SETTINGS,
+                Uri.fromParts("package", context.packageName, null)
+            ))
+        }.onFailure {
+            Toast.makeText(context, "Postavke nisu dostupne", Toast.LENGTH_SHORT).show()
+        }
+    }
 
     var previewView by remember { mutableStateOf<PreviewView?>(null) }
     var selfieView by remember { mutableStateOf<PreviewView?>(null) }
@@ -687,7 +697,11 @@ private fun LensigoApplication() {
         Box(Modifier.fillMaxSize().background(Black).windowInsetsPadding(WindowInsets.safeDrawing)) {
             when (screen) {
                 Screen.SPLASH -> LensigoSplash()
-                Screen.WELCOME -> LensigoWelcome { screen = Screen.PERMISSIONS }
+                Screen.WELCOME -> LensigoWelcome(
+                    onBack = { (context as? Activity)?.finish() },
+                    onSettings = ::openAppSystemSettings,
+                    onContinue = { screen = Screen.PERMISSIONS }
+                )
                 Screen.PERMISSIONS -> LensigoPermissions(
                     cameraGranted = hasCameraPermission,
                     storageGranted = hasStoragePermission,
@@ -700,6 +714,8 @@ private fun LensigoApplication() {
                         }
                     },
                     onMic = { requestMic.launch(Manifest.permission.RECORD_AUDIO) },
+                    onBack = { screen = Screen.WELCOME },
+                    onSettings = ::openAppSystemSettings,
                     onContinue = {
                         prefs.edit().putBoolean("onboarded", true).apply()
                         screen = Screen.HOME
