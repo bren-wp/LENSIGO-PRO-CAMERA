@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.res.painterResource
 import androidx.compose.foundation.Image
 import androidx.compose.ui.text.font.FontWeight
@@ -47,7 +48,8 @@ fun LensigoSplash() {
         )
     ) {
         SplashWaves()
-        val compact = maxHeight < 600.dp || maxWidth < 350.dp
+        val fontScale = LocalDensity.current.fontScale
+        val compact = maxHeight < 600.dp || maxWidth < 350.dp || fontScale >= 1.4f
         if (compact) {
             Column(
                 Modifier.fillMaxSize()

@@ -188,3 +188,9 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - Reference 19's central brand block uses a smaller approximately 92dp mark, a 30sp LENSIGO wordmark and adjusted surrounding spacing. The real Android version from `BuildConfig.VERSION_NAME` remains shown instead of the reference mockup's conceptual developer messages.
 - The Licences screen now references the actual `github.com/bren-wp/Lensigo-PRO` and opens that URI via a real Android ACTION_VIEW intent. No network permission is added to the camera itself; the user-selected external browser handles opening it.
 - These are source-guided corrections. Neither 1080×2400 nor 1600×2560 real emulator screenshots have been compared yet, so 1:1 remains unverified.
+
+## 01 Splash / 04 Home — prilagodba velikim slovima nakon v0.7.34
+
+- Splash 01 pri povećanju fonta ≥1,4× koristi kompaktniji pomični izgled da se logotip, slogan i podnožje ne odrežu; standardni raspored ostaje nepromijenjen.
+- Home 04 na tabletima s fontom ≥1,6× prikazuje dvije umjesto četiri kartice u retku, a na mobitelima užim od 420 dp s takvim fontom po jednu; naslovni banner dobiva dodatnu visinu i galerija pristupačan naziv akcije.
+- **Provjera 1:1 nije potvrđena:** stvarne Android snimke zaslona i poravnate izvorne PNG reference trebaju se usporediti pixel-audit alatom.

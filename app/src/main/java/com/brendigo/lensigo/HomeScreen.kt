@@ -71,8 +71,9 @@ private val tiles = listOf(
 private fun BrandBanner() {
     val fontScale = LocalDensity.current.fontScale
     val bannerHeight = when {
-        fontScale >= 1.6f -> 250.dp
-        fontScale >= 1.2f -> 200.dp
+        fontScale >= 2f -> 320.dp
+        fontScale >= 1.6f -> 270.dp
+        fontScale >= 1.2f -> 210.dp
         else -> 164.dp
     }
     Box(
@@ -119,8 +120,14 @@ internal fun LensigoHomeScreen(
         listOf(Midnight, Color(0xFF0B1C2B), Color(0xFF07111E))
     ))) {
         val tablet = maxWidth >= 600.dp
-        val narrowPhone = maxWidth < 340.dp
         val fontScale = LocalDensity.current.fontScale
+        val narrowPhone = maxWidth < 340.dp || (maxWidth < 420.dp && fontScale >= 1.6f)
+        val columns = when {
+            tablet && fontScale >= 1.6f -> 2
+            tablet -> 4
+            narrowPhone -> 1
+            else -> 2
+        }
         val maxContentWidth = if (tablet) 950.dp else 540.dp
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(
@@ -147,7 +154,7 @@ internal fun LensigoHomeScreen(
                 }
             }
             LazyVerticalGrid(
-                columns = GridCells.Fixed(if (tablet) 4 else if (narrowPhone) 1 else 2),
+                columns = GridCells.Fixed(columns),
                 modifier = Modifier.weight(1f).widthIn(max = maxContentWidth),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -190,7 +197,8 @@ internal fun LensigoHomeScreen(
                 .clip(RoundedCornerShape(15.dp))
                 .border(1.dp, Cyan.copy(alpha = .8f), RoundedCornerShape(15.dp))
                 .background(Color(0xFF0B4868))
-                .clickable(onClick = onGallery), contentAlignment = Alignment.Center) {
+                .clickable(onClickLabel = "Otvori galeriju snimki", role = Role.Button,
+                    onClick = onGallery), contentAlignment = Alignment.Center) {
                 Row(verticalAlignment = Alignment.CenterVertically) {
                     Icon(Icons.Default.PhotoLibrary, null, tint = White,
                         modifier = Modifier.size(18.dp))
