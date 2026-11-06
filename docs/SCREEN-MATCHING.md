@@ -118,3 +118,10 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - The source `assets/photo.jpg` (same `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`) supplied the hero artwork for mobile reference 04 and its camera scene. This revision packages a local, center-cropped **300×134 WebP** (about 3 KB) as `res/drawable-nodpi/lensigo_home_hero.webp`. It is not a fabricated landscape or remote image.
 - Eight camera-mode icons have changed from filled Material glyphs to outlined variants closer to the 04 reference. Standard card layout (two columns on phone, four on tablet, single narrow-phone fallback) is preserved.
 - The smaller WebP is lossy; this is a UI fidelity improvement, not a proof of exact original image pixels. Improve the asset resolution when the full source can be safely checked in, and compare real Android emulator screenshots against 04_home.png before marking 1:1.
+
+## Photo 05 — focus frame and actual thumbnail
+
+- The 78dp preview focus reticle starts centred and follows the real user tap, clamped inside the live CameraX preview while the same tap is sent for metering.
+- The bottom-left gallery shortcut displays a bounded, locally decoded last-photograph thumbnail after capture. The image decoding uses Dispatchers.IO; without saved media the shortcut remains an icon, not a mockup.
+- The shutter has contextual screen-reader actions for still photo or starting/stopping video.
+- Pending: device screenshots and actual OEM autofocus/lens testing. Photo-mode HDR has not been implemented merely to match static reference text.

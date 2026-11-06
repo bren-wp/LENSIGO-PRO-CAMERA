@@ -43,6 +43,7 @@ import androidx.camera.view.PreviewView
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
+import androidx.compose.ui.draw.clip
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.verticalScroll
@@ -65,6 +66,9 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.asImageBitmap
+import androidx.compose.ui.graphics.ImageBitmap
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
@@ -231,6 +235,18 @@ private fun LensigoApplication() {
     var zoomMax by remember { mutableFloatStateOf(1f) }
     var currentZoom by remember { mutableFloatStateOf(1f) }
     var lastPhoto by remember { mutableStateOf<Uri?>(null) }
+    var lastPhotoThumbnail by remember { mutableStateOf<ImageBitmap?>(null) }
+    LaunchedEffect(lastPhoto) {
+        lastPhotoThumbnail = null
+        lastPhoto?.let { uri ->
+            val bitmap = withContext(Dispatchers.IO) {
+                MediaLibrary.thumbnail(context, LensMedia(uri, false, 0), 96)
+            }
+            if (bitmap != null) lastPhotoThumbnail = bitmap.asImageBitmap()
+        }
+    }
+    var focusPoint by remember { mutableStateOf<Offset?>(null) }
+    LaunchedEffect(mode, front) { focusPoint = null }
     var activeMedia by remember { mutableStateOf<LensMedia?>(null) }
     val currentRecording by rememberUpdatedState(recording)
     DisposableEffect(Unit) { onDispose {
@@ -733,6 +749,7 @@ private fun LensigoApplication() {
                             } }, modifier = Modifier.fillMaxSize(), update = { previewView = it })
                             Box(Modifier.fillMaxSize().pointerInput(activeCamera) {
                                 detectTapGestures { pos ->
+                                    focusPoint = pos
                                     val view = previewView ?: return@detectTapGestures
                                     val point = view.meteringPointFactory.createPoint(pos.x, pos.y)
                                     activeCamera?.cameraControl?.startFocusAndMetering(
@@ -751,7 +768,7 @@ private fun LensigoApplication() {
                                 }
                             }
                             if (mode != CameraMode.PANORAMA && mode != CameraMode.DUAL) {
-                                FocusCorners(Modifier.align(Alignment.Center).size(78.dp))
+                                FocusCorners(Modifier.fillMaxSize(), focusPoint)
                             }
                         } else {
                             Column(Modifier.align(Alignment.Center).padding(20.dp),
@@ -923,12 +940,29 @@ private fun LensigoApplication() {
                         horizontalArrangement = Arrangement.SpaceEvenly
                     ) {
                         IconButton(onClick = ::openFromCamera, modifier = Modifier.size(54.dp)) {
-                            Icon(Icons.Default.PhotoLibrary, "Galerija", tint = White,
-                                modifier = Modifier.size(28.dp))
+                            val thumb = lastPhotoThumbnail
+                            if (thumb != null) {
+                                Image(
+                                    bitmap = thumb, contentDescription = "Galerija",
+                                    contentScale = ContentScale.Crop,
+                                    modifier = Modifier.size(45.dp)
+                                        .clip(RoundedCornerShape(10.dp))
+                                        .border(1.dp, White.copy(alpha = .7f), RoundedCornerShape(10.dp))
+                                )
+                            } else {
+                                Icon(Icons.Default.PhotoLibrary, "Galerija", tint = White,
+                                    modifier = Modifier.size(28.dp))
+                            }
                         }
                         Box(Modifier.size(78.dp).border(3.dp, White, CircleShape).padding(6.dp)
                             .background(if (mode == CameraMode.VIDEO) Color(0xFFEB3D43) else White, CircleShape)
-                            .clickable(enabled = !processing && countdown == 0 && hasCameraPermission) {
+                            .clickable(
+                                enabled = !processing && countdown == 0 && hasCameraPermission,
+                                role = Role.Button,
+                                onClickLabel = if (mode == CameraMode.VIDEO) {
+                                    if (isRecording) "Zaustavi snimanje" else "Pokreni snimanje"
+                                } else "Snimi fotografiju"
+                            ) {
                                 onShutter()
                             }, contentAlignment = Alignment.Center) {
                             if (isRecording) Box(Modifier.size(26.dp)
@@ -1096,18 +1130,26 @@ private fun LensigoApplication() {
 }
 
 @Composable
-private fun FocusCorners(modifier: Modifier = Modifier) {
+private fun FocusCorners(modifier: Modifier = Modifier, touch: Offset? = null) {
     Canvas(modifier) {
+        val frame = 78.dp.toPx().coerceAtMost(size.minDimension)
+        val half = frame / 2f
+        val cx = (touch?.x ?: size.width / 2f).coerceIn(half, size.width - half)
+        val cy = (touch?.y ?: size.height / 2f).coerceIn(half, size.height - half)
+        val l = cx - half; val r = cx + half
+        val t = cy - half; val b = cy + half
+        val corner = frame * .25f
         val stroke = 2.dp.toPx()
-        val corner = size.width * .25f
-        val w = size.width; val h = size.height
-        val segments = listOf(
-            Pair(Offset(0f, corner), Offset(0f,0f)), Pair(Offset(0f,0f), Offset(corner,0f)),
-            Pair(Offset(w-corner,0f), Offset(w,0f)), Pair(Offset(w,0f), Offset(w,corner)),
-            Pair(Offset(0f,h-corner), Offset(0f,h)), Pair(Offset(0f,h), Offset(corner,h)),
-            Pair(Offset(w-corner,h), Offset(w,h)), Pair(Offset(w,h), Offset(w,h-corner))
-        )
-        segments.forEach { (a,b) -> drawLine(White, a, b, strokeWidth = stroke) }
+        listOf(
+            Offset(l, t + corner) to Offset(l, t),
+            Offset(l, t) to Offset(l + corner, t),
+            Offset(r - corner, t) to Offset(r, t),
+            Offset(r, t) to Offset(r, t + corner),
+            Offset(l, b - corner) to Offset(l, b),
+            Offset(l, b) to Offset(l + corner, b),
+            Offset(r - corner, b) to Offset(r, b),
+            Offset(r, b) to Offset(r, b - corner)
+        ).forEach { (a, z) -> drawLine(White, a, z, strokeWidth = stroke) }
     }
 }
 
