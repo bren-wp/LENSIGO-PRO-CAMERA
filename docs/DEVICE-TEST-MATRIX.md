@@ -47,3 +47,10 @@ A screenshot score is valid only for the specific device settings used to captur
 - Na kompaktnom rasporedu potvrditi da su Započni i Nastavi dostupni okomitim pomicanjem bez preklapanja kartica/dozvola.
 - Na Androidu 7–9 potvrditi da Kamera i Spremanje pokreću **odvojene** sistemske dijaloge; na Androidu 10+ Spremanje ne smije tražiti zastarjelu dozvolu.
 - Stvarna Android UI/emulator i pixel-diff testiranja još nisu izvršena.
+
+## Dodatne provjere nakon izmjene 04 Home
+
+- Na širini 320 dp očekivati jednu karticu po retku, bez odrezanih naziva načina rada; 360 dp i više (do tabletne granice) prikazuju dva stupca.
+- Na 600 dp i više ostaje četiri stupca, ali provjeriti razmještaj i čitljivost pri povećanju fonta do 2×.
+- Screen reader mora moći aktivirati logotip (O aplikaciji), svaku funkcionalnu karticu i postavke; ikona u kartici ne smije nepotrebno dvostruko izgovarati naziv.
+- Stvarne Android snimke zaslona, live CameraX način rada i pixel-diff rezultat nisu potvrđeni.

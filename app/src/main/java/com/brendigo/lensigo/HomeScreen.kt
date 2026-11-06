@@ -23,6 +23,8 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
@@ -61,7 +63,13 @@ private val tiles = listOf(
 
 @Composable
 private fun BrandBanner() {
-    Box(Modifier.fillMaxWidth().height(164.dp)
+    val fontScale = LocalDensity.current.fontScale
+    val bannerHeight = when {
+        fontScale >= 1.6f -> 250.dp
+        fontScale >= 1.2f -> 200.dp
+        else -> 164.dp
+    }
+    Box(Modifier.fillMaxWidth().height(bannerHeight)
         .clip(RoundedCornerShape(21.dp))
         .border(1.dp, Outline, RoundedCornerShape(21.dp))) {
         // Scenic local rendering until the source JPEG is bundled. No network request.
@@ -121,6 +129,8 @@ internal fun LensigoHomeScreen(
 ) {
     BoxWithConstraints(Modifier.fillMaxSize().background(Midnight)) {
         val tablet = maxWidth >= 600.dp
+        val narrowPhone = maxWidth < 340.dp
+        val fontScale = LocalDensity.current.fontScale
         val maxContentWidth = if (tablet) 950.dp else 540.dp
         Column(Modifier.fillMaxSize(), horizontalAlignment = Alignment.CenterHorizontally) {
             Row(
@@ -128,11 +138,16 @@ internal fun LensigoHomeScreen(
                     .heightIn(min = 77.dp).padding(horizontal = 17.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                LensigoBrandMark(Modifier.size(48.dp).clickable(onClick = onAbout))
+                LensigoBrandMark(Modifier.size(48.dp).clickable(
+                    onClickLabel = "O aplikaciji LENSIGO",
+                    role = Role.Button, onClick = onAbout
+                ))
                 Spacer(Modifier.width(10.dp))
                 Column(Modifier.weight(1f)) {
-                    Text("LENSIGO", color = White, fontSize = 27.sp,
-                        fontWeight = FontWeight.Bold, letterSpacing = .7.sp)
+                    Text("LENSIGO", color = White,
+                        fontSize = if (fontScale >= 1.6f) 22.sp else 27.sp,
+                        fontWeight = FontWeight.Bold, letterSpacing = .7.sp,
+                        maxLines = 1, overflow = TextOverflow.Ellipsis)
                     Text("PRO CAMERA · BY BRENDIGO", color = Cyan,
                         fontSize = 10.sp, fontWeight = FontWeight.SemiBold)
                 }
@@ -142,7 +157,7 @@ internal fun LensigoHomeScreen(
                 }
             }
             LazyVerticalGrid(
-                columns = GridCells.Fixed(if (tablet) 4 else 2),
+                columns = GridCells.Fixed(if (tablet) 4 else if (narrowPhone) 1 else 2),
                 modifier = Modifier.weight(1f).widthIn(max = maxContentWidth),
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
                 verticalArrangement = Arrangement.spacedBy(10.dp),
@@ -162,14 +177,16 @@ internal fun LensigoHomeScreen(
                         Modifier.fillMaxWidth().heightIn(min = 105.dp)
                             .background(CardColor, RoundedCornerShape(17.dp))
                             .border(1.dp, Outline, RoundedCornerShape(17.dp))
-                            .clickable { onMode(tile.mode) }.padding(15.dp),
+                            .clickable(onClickLabel = tile.hint, role = Role.Button) {
+                                onMode(tile.mode)
+                            }.padding(15.dp),
                         verticalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Icon(tile.icon, contentDescription = tile.hint, tint = Cyan,
+                        Icon(tile.icon, contentDescription = null, tint = Cyan,
                             modifier = Modifier.size(28.dp))
                         Spacer(Modifier.height(15.dp))
                         Text(tile.label, color = White, fontSize = 14.sp,
-                            fontWeight = FontWeight.Bold, maxLines = 1,
+                            fontWeight = FontWeight.Bold, maxLines = 2,
                             overflow = TextOverflow.Ellipsis)
                     }
                 }

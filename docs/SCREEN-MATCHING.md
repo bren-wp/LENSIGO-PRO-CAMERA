@@ -97,3 +97,10 @@ UI je responzivan kroz Compose `widthIn(max=540.dp)`, okomito pomicanje i `heigh
 - **02 Dobrodošlica:** na standardnim zaslonima očuvan je postojeći raspored i tipografija. Na niskim/uskim prozorima koristi se manji okvir logotipa i okomito pomicanje radi dostupnog gumba Započni i većeg teksta.
 - **03 Dozvole:** mala visina i široko povećanje fonta više ne ovise o elementu koji raste unutar nedovoljno visokog zaslona; sadržaj se pomiče, tako da korisnik može doći do gumba Nastavi.
 - **Vizualni status:** nema mjerenja stvarnih snimaka uređaja za 02/03, stoga nije potvrđena 1:1 podudarnost s referentnim PNG-ovima.
+
+## Nastavak — zaslon 04 Početna stranica
+
+- Standardna mobilna referentna mreža od dva stupca i tabletna od četiri ostaje nepromijenjena.
+- Na širini manjoj od 340 dp prelazi se na jedan stupac da nazivi načina snimanja ne budu odrezani.
+- Kartice dopuštaju dva retka na velikom fontu; zaglavlje i banner prilagođavaju se većim fontovima, a akcije s ikonama imaju pristupačnije oznake.
+- **Preostaje:** stvarna usporedba geometrije i boja s 04_home.png, test Android čitača zaslona i instrumentirano testiranje na uređaju.
