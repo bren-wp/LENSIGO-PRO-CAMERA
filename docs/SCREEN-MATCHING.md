@@ -202,3 +202,10 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - **05 Photo / 10 Panorama / 11 Dual:** stvaranje privremene JPEG datoteke sada obrađuje neuspjeh pohrane bez rušenja korisničkog zaslona; neuspjelo stvaranje druge Dual snimke čisti prvu snimku.
 - **06 Video:** pri prelasku aktivnosti u ON_STOP zaustavlja se aktivno snimanje i otkazuje samookidač; nakon neuspjeha finalizacije briše se djelomični MediaStore izlaz nastao u toj sesiji.
 - **Nije dokazano 1:1:** ove korekcije temelje se na izvornoj referenci i implementacijskom auditu. Provjeru 1080×2400 i 1600×2560 potrebno je provesti na stvarnim Android screenshotovima, kao i fizičke CameraX testove.
+
+## Navigacija i redoslijed kamere (nakon v0.7.40)
+
+- **05 Photo / 06 Video:** traka načinâ snimanja sada u početnom vidljivom području prati izvorni redoslijed `FILTERI / VIDEO / FOTO / PRO / NOĆ`, bez zamjene definicija samih CameraX načina.
+- **04 Home / Camera / Gallery / Settings / About:** vraćanje sada poštuje ekran s kojeg je korisnik došao. Camera → Home, Home → izlaz, Gallery → svoj stvarni prethodni zaslon, Settings i About → odgovarajući izvorni zaslon. Svi vidljivi gumbi za povratak usklađeni su sa sustavnom navigacijom.
+- Dodani su JUnit testovi da se izvorni redoslijed načinâ rada ne može slučajno pokvariti, a nijedan način rada nestati.
+- Potrebni su testovi na uređaju za Back geste, veliki font i CameraX izlaz/povratak; vizualni 1:1 i dalje nije potvrđen stvarnim screenshot usporedbama.

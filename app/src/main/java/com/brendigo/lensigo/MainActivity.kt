@@ -105,6 +105,14 @@ internal enum class CameraMode(val title: String) {
     PORTRAIT("PORTRET"), PANORAMA("PANORAMA"), DUAL("DUAL"), FILTERS("FILTERI")
 }
 
+// Match the actual 05_photo and 06_video reference strip rather than enum order:
+// FILTERI · VIDEO · FOTO · PRO · NOĆ are visible around the selected photo mode.
+internal val cameraModeOrder = listOf(
+    CameraMode.FILTERS, CameraMode.VIDEO, CameraMode.PHOTO,
+    CameraMode.PRO, CameraMode.NIGHT, CameraMode.PORTRAIT,
+    CameraMode.PANORAMA, CameraMode.DUAL
+)
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -141,10 +149,15 @@ private fun LensigoApplication() {
     }
     var mode by remember { mutableStateOf(CameraMode.PHOTO) }
     var privacyReturnScreen by remember { mutableStateOf(Screen.SETTINGS) }
+    var settingsReturnScreen by remember { mutableStateOf(Screen.CAMERA) }
+    var aboutReturnScreen by remember { mutableStateOf(Screen.SETTINGS) }
+    var galleryReturnScreen by remember { mutableStateOf(Screen.CAMERA) }
     var front by remember { mutableStateOf(false) }
     var pipOnLeft by remember { mutableStateOf(false) }
     val modeListState = rememberLazyListState()
-    LaunchedEffect(mode) { modeListState.animateScrollToItem((CameraMode.entries.indexOf(mode) - 2).coerceAtLeast(0)) }
+    LaunchedEffect(mode) {
+        modeListState.animateScrollToItem((cameraModeOrder.indexOf(mode) - 2).coerceAtLeast(0))
+    }
     var photoAspectWide by remember {
         mutableStateOf(prefs.getBoolean("photo_aspect_wide", false))
     }
@@ -718,6 +731,7 @@ private fun LensigoApplication() {
         shutterTimer = null
         countdown = 0
         clearTemporaryCaptures()
+        galleryReturnScreen = Screen.CAMERA
         screen = Screen.GALLERY
     }
     fun moveTo(next: Screen) {
@@ -727,18 +741,37 @@ private fun LensigoApplication() {
             shutterTimer = null
             countdown = 0
         }
+        if (next == Screen.SETTINGS && screen !in setOf(
+            Screen.SETTINGS, Screen.CAMERA_SETTINGS, Screen.PRIVACY,
+            Screen.ABOUT, Screen.LICENCES
+        )) {
+            settingsReturnScreen = screen
+        }
+        if (next == Screen.ABOUT && screen !in setOf(
+            Screen.ABOUT, Screen.PRIVACY, Screen.LICENCES
+        )) {
+            aboutReturnScreen = screen
+        }
+        if (next == Screen.GALLERY && screen !in setOf(
+            Screen.GALLERY, Screen.VIEWER, Screen.SETTINGS
+        )) {
+            galleryReturnScreen = screen
+        }
         if (next != Screen.CAMERA) clearTemporaryCaptures()
         screen = next
     }
     BackHandler(enabled = screen !in setOf(
-        Screen.CAMERA, Screen.SPLASH, Screen.WELCOME, Screen.PERMISSIONS
+        Screen.SPLASH, Screen.WELCOME, Screen.PERMISSIONS
     ) && !isRecording && !processing) {
         when (screen) {
-            Screen.HOME, Screen.GALLERY, Screen.SETTINGS -> moveTo(Screen.CAMERA)
+            Screen.CAMERA -> moveTo(Screen.HOME)
+            Screen.HOME -> (context as? Activity)?.finish()
+            Screen.GALLERY -> moveTo(galleryReturnScreen)
+            Screen.SETTINGS -> moveTo(settingsReturnScreen)
             Screen.VIEWER -> moveTo(Screen.GALLERY)
             Screen.CAMERA_SETTINGS -> moveTo(Screen.SETTINGS)
             Screen.PRIVACY -> moveTo(privacyReturnScreen)
-            Screen.ABOUT -> moveTo(Screen.SETTINGS)
+            Screen.ABOUT -> moveTo(aboutReturnScreen)
             Screen.LICENCES -> moveTo(Screen.ABOUT)
             else -> Unit
         }
@@ -1002,7 +1035,7 @@ private fun LensigoApplication() {
                         contentPadding = PaddingValues(horizontal = 32.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
-                        items(CameraMode.entries) { item ->
+                        items(cameraModeOrder) { item ->
                             Text(item.title, fontSize = 13.sp,
                                 fontWeight = if (mode == item) FontWeight.Bold else FontWeight.Normal,
                                 color = if (mode == item) Cyan else Muted,
@@ -1076,7 +1109,7 @@ private fun LensigoApplication() {
                     onAbout = { moveTo(Screen.ABOUT) }
                 )
                 Screen.GALLERY -> GalleryScreen(
-                    onBack = { moveTo(Screen.CAMERA) },
+                    onBack = { moveTo(galleryReturnScreen) },
                     onOpen = { activeMedia = it; moveTo(Screen.VIEWER) },
                     onSettings = { moveTo(Screen.SETTINGS) }
                 )
@@ -1132,7 +1165,7 @@ private fun LensigoApplication() {
                         moveTo(Screen.PRIVACY)
                     },
                     onAbout = { moveTo(Screen.ABOUT) },
-                    onBack = { moveTo(Screen.CAMERA) }
+                    onBack = { moveTo(settingsReturnScreen) }
                 )
                 Screen.CAMERA_SETTINGS -> LensigoCameraSettingsScreen(
                     jpegQuality = jpegQuality,
@@ -1185,7 +1218,7 @@ private fun LensigoApplication() {
                 )
                 Screen.ABOUT -> LensigoAboutScreen(
                     version = BuildConfig.VERSION_NAME,
-                    onBack = { moveTo(Screen.SETTINGS) },
+                    onBack = { moveTo(aboutReturnScreen) },
                     onSettings = { moveTo(Screen.SETTINGS) },
                     onPrivacy = {
                         privacyReturnScreen = Screen.ABOUT
