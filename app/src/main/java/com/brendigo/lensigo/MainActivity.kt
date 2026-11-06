@@ -93,7 +93,7 @@ private val Muted = Color(0xFF9DB5C4)
 private val White = Color(0xFFF7FCFF)
 
 private enum class Screen { SPLASH, WELCOME, PERMISSIONS, HOME, CAMERA, GALLERY, VIEWER, SETTINGS, CAMERA_SETTINGS, PRIVACY, ABOUT, LICENCES }
-private enum class CameraMode(val title: String) {
+internal enum class CameraMode(val title: String) {
     VIDEO("VIDEO"), PHOTO("FOTO"), PRO("PRO"), NIGHT("NOĆ"),
     PORTRAIT("PORTRET"), PANORAMA("PANORAMA"), DUAL("DUAL"), FILTERS("FILTERI")
 }
@@ -928,31 +928,15 @@ private fun LensigoApplication() {
                         }
                     }
                 }
-                Screen.HOME -> PageScaffold("LENSIGO", onBack = { moveTo(Screen.CAMERA) }) {
-                    Text("PRO CAMERA", color = Cyan, fontSize = 19.sp, fontWeight = FontWeight.Bold)
-                    Text("Svaki kadar. Tvoja priča.", color = Muted)
-                    Spacer(Modifier.height(18.dp))
-                    val routes = listOf(
-                        "📷  Foto" to CameraMode.PHOTO,
-                        "🎬  Video" to CameraMode.VIDEO,
-                        "✨  Filteri" to CameraMode.FILTERS,
-                        "🌙  Noćni" to CameraMode.NIGHT,
-                        "⚙️  Pro" to CameraMode.PRO,
-                        "👤  Portret" to CameraMode.PORTRAIT,
-                        "↔  Panorama" to CameraMode.PANORAMA,
-                        "▣  Dual" to CameraMode.DUAL
-                    )
-                    routes.forEach { (name, target) ->
-                        Button(onClick = { setMode(target); moveTo(Screen.CAMERA) },
-                            modifier = Modifier.fillMaxWidth()) { Text(name) }
-                    }
-                    Text("Panorama spaja 2–5 snimki uz ručno usmjeravanje. Dual koristi dvije kamere ako su dostupne, ili dva uzastopna kadra.",
-                        color = Muted, fontSize = 13.sp)
-                    Button(onClick = { moveTo(Screen.GALLERY) }, modifier = Modifier.fillMaxWidth()) {
-                        Icon(Icons.Default.PhotoLibrary, null); Spacer(Modifier.width(8.dp))
-                        Text("Galerija")
-                    }
-                }
+                Screen.HOME -> LensigoHomeScreen(
+                    onMode = { selected ->
+                        setMode(selected)
+                        moveTo(Screen.CAMERA)
+                    },
+                    onGallery = { moveTo(Screen.GALLERY) },
+                    onSettings = { moveTo(Screen.SETTINGS) },
+                    onAbout = { moveTo(Screen.ABOUT) }
+                )
                 Screen.GALLERY -> GalleryScreen(
                     onBack = { moveTo(Screen.CAMERA) },
                     onOpen = { activeMedia = it; moveTo(Screen.VIEWER) },

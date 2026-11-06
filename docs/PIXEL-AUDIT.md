@@ -22,3 +22,14 @@ The script refuses differing dimensions and produces a JSON report and intensifi
 - Brending: `04_google_play_feature_1024x500.png`
 
 Assets were provided by the user in conversation. Only text-based vector approximations have been committed; pixel-equivalent PNGs are not yet integrated in the Android resource tree. Launcher icon requires final device-level visual comparison.
+
+## 19 zaslona u jednoj provjeri — mobilni i tablet
+
+```bash
+python tools/pixel_audit_batch.py --reference reference/mobitel --actual screenshots/mobitel --output audit/mobitel
+python tools/pixel_audit_batch.py --reference reference/tablet --actual screenshots/tablet --output audit/tablet
+```
+
+Skripta generira `summary.json`, pojedinačne razlike i **pada** ako bilo koji od 19 screenshotova nedostaje ili nije identičan. To su stroge mjere za fiksne statične scene; za live kameru potrebno je maskirati promjenjivu sliku senzora i sustavne trake. Bez 38 stvarnih Android screenshotova rezultat ostaje **neprovjeren**, a ne 1:1.
+
+Launch PNG se reproducira identično referentnom RGB sadržaju; to nije isto što i konačni prikaz ikone unutar svih maski proizvođačkih launchera.

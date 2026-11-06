@@ -70,43 +70,63 @@ object MediaActions {
             }
         }
 
-    /** Crop and rotate offline. Always writes a new item, never replaces the source. */
+    /**
+     * The same crop / rotation / filter pipeline is used by the lightweight
+     * editor preview and full-resolution export. The caller retains ownership
+     * of [source] and must recycle the resulting bitmap when finished.
+     */
+    fun renderEdit(
+        source: Bitmap, look: PhotoLook, cropAspect: Float?, rotation: Int
+    ): Bitmap {
+        var current = source
+        try {
+            if (cropAspect != null && cropAspect > 0f) {
+                val geometry = EditorGeometry.centerCrop(current.width, current.height, cropAspect)
+                if (geometry.width != current.width || geometry.height != current.height) {
+                    val next = Bitmap.createBitmap(current, geometry.left, geometry.top,
+                        geometry.width, geometry.height)
+                    if (current !== source) current.recycle()
+                    current = next
+                }
+            }
+            val normalized = ((rotation % 360) + 360) % 360
+            if (normalized != 0) {
+                val next = Bitmap.createBitmap(current, 0, 0, current.width, current.height,
+                    Matrix().apply { postRotate(normalized.toFloat()) }, true)
+                if (current !== source && next !== current) current.recycle()
+                current = next
+            }
+            val output = FilterEngine.apply(current, look)
+            if (current !== source && output !== current) current.recycle()
+            return output
+        } catch (error: Exception) {
+            if (current !== source && !current.isRecycled) current.recycle()
+            throw error
+        }
+    }
+
+    /** Editing never overwrites the original photo or its MediaStore item. */
     suspend fun saveEdited(context: Context, source: Uri, look: PhotoLook,
                            cropAspect: Float?, rotation: Int,
                            quality: Int, lowMemory: Boolean): Uri =
         withContext(Dispatchers.IO) {
             val original = File.createTempFile("lensigo_editor_", ".jpg", context.cacheDir)
-            var result: Bitmap? = null
             try {
                 context.contentResolver.openInputStream(source)?.use { input ->
                     original.outputStream().use { input.copyTo(it) }
                 } ?: throw IOException("Fotografija nije dostupna")
-                result = FilterEngine.decode(original, if (lowMemory) 2048 else 3072)
-                if (cropAspect != null && cropAspect > 0) {
-                    val w = result.width; val h = result.height
-                    val currentAspect = w.toFloat() / h
-                    val cropW = if (currentAspect > cropAspect)
-                        (h * cropAspect).toInt().coerceIn(1, w) else w
-                    val cropH = if (currentAspect > cropAspect) h
-                        else (w / cropAspect).toInt().coerceIn(1, h)
-                    val crop = Bitmap.createBitmap(result, (w - cropW) / 2,
-                        (h - cropH) / 2, cropW, cropH)
-                    if (crop !== result) result.recycle()
-                    result = crop
+                val decoded = FilterEngine.decode(original, if (lowMemory) 2048 else 3072)
+                val edited = try {
+                    renderEdit(decoded, look, cropAspect, rotation)
+                } finally {
+                    decoded.recycle()
                 }
-                if (rotation % 360 != 0) {
-                    val rotated = Bitmap.createBitmap(result, 0, 0,
-                        result.width, result.height,
-                        Matrix().apply { postRotate(rotation.toFloat()) }, true)
-                    if (rotated !== result) result.recycle()
-                    result = rotated
+                try {
+                    MediaLibrary.saveBitmap(context, edited, "EDIT", quality)
+                } finally {
+                    edited.recycle()
                 }
-                val filtered = FilterEngine.apply(result, look)
-                if (filtered !== result) result.recycle()
-                result = filtered
-                MediaLibrary.saveBitmap(context, result, "EDIT", quality)
             } finally {
-                result?.recycle()
                 original.delete()
             }
         }

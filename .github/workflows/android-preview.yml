@@ -29,17 +29,19 @@ jobs:
           SDKMANAGER="$(find /usr/local/lib/android/sdk/cmdline-tools -type f -name sdkmanager | head -n 1)"
           test -x "$SDKMANAGER"
           yes | "$SDKMANAGER" --licenses >/dev/null || true
-          "$SDKMANAGER" "platforms;android-36" "build-tools;36.0.0"
+          "$SDKMANAGER" "platforms;android-37" "build-tools;36.0.0"
       - uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: '9.6.0'
       - name: Build APK and AAB
-        run: gradle :app:assembleDebug :app:bundleRelease :app:testDebugUnitTest :app:lintDebug --stacktrace
+        run: gradle :app:assembleDebug :app:bundleRelease :app:testDebugUnitTest :app:lintDebug :app:lintRelease --stacktrace
       - name: Show complete lint report on failure
         if: failure()
         run: |
           REPORT="app/build/intermediates/lint_intermediate_text_report/debug/lintReportDebug/lint-results-debug.txt"
           if [ -f "$REPORT" ]; then cat "$REPORT"; fi
+      - name: Verify package format and absence of unverified native code
+        run: python tools/play_package_check.py app/build/outputs/apk/debug/app-debug.apk app/build/outputs/bundle/release/app-release.aab
       - uses: actions/upload-artifact@v4
         with:
           name: lensigo-android-preview
@@ -58,5 +60,5 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          TAG="v0.6.${{ github.run_number }}"
-          gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO 0.6.0 preview: redesigned Privacy and About screens, active permission settings, browser and licence navigation, hardened MediaStore listing, permission refresh after Android settings, cancellable camera countdown, back navigation and new test checks. 1:1 full-screen screenshots and physical-device tests pending. Debug APK test signed; release AAB unsigned."
+          TAG="v0.7.${{ github.run_number }}"
+          gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO 0.7.0: responsive camera mode home, bounded editor preview with shared crop/rotate/filter pipeline, centered-crop geometry tests, EXIF mirror handling, lighter video thumbnails, 19-screen batch pixel auditor; updated compatible stable AndroidX dependencies and SDK, stricter Play package preflight. Build/lint/unit tests do not prove 1:1 on real devices. Debug APK test-signed; AAB unsigned/not Play ready."

@@ -141,17 +141,16 @@ object FilterEngine {
             inPreferredConfig = Bitmap.Config.ARGB_8888
         }
         val bitmap = requireNotNull(BitmapFactory.decodeFile(file.absolutePath, options))
-        val rotation = when (ExifInterface(file.absolutePath).getAttributeInt(
-            ExifInterface.TAG_ORIENTATION, ExifInterface.ORIENTATION_NORMAL
-        )) {
-            ExifInterface.ORIENTATION_ROTATE_90 -> 90
-            ExifInterface.ORIENTATION_ROTATE_180 -> 180
-            ExifInterface.ORIENTATION_ROTATE_270 -> 270
-            else -> 0
-        }
-        if (rotation == 0) return bitmap
+        // Also honor mirrored EXIF orientations used by some front cameras.
+        val exif = ExifInterface(file.absolutePath)
+        val rotation = exif.rotationDegrees
+        val mirrored = exif.isFlipped
+        if (rotation == 0 && !mirrored) return bitmap
         val rotated = Bitmap.createBitmap(bitmap, 0, 0, bitmap.width, bitmap.height,
-            Matrix().apply { postRotate(rotation.toFloat()) }, true)
+            Matrix().apply {
+                if (mirrored) postScale(-1f, 1f)
+                if (rotation != 0) postRotate(rotation.toFloat())
+            }, true)
         if (rotated !== bitmap) bitmap.recycle()
         return rotated
     }

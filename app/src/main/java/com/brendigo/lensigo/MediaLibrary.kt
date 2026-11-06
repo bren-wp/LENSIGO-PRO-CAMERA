@@ -65,10 +65,22 @@ object MediaLibrary {
             context.contentResolver.loadThumbnail(item.uri, Size(size, size), CancellationSignal())
         } catch (_: Exception) { null }
         if (item.isVideo) {
+            // The legacy full-size video frame can exhaust RAM. API 27+
+            // supports scaled extraction; 24–26 uses MediaStore thumbnails.
+            if (Build.VERSION.SDK_INT <= 26) {
+                return try {
+                    MediaStore.Video.Thumbnails.getThumbnail(
+                        context.contentResolver,
+                        ContentUris.parseId(item.uri),
+                        MediaStore.Video.Thumbnails.MINI_KIND, null)
+                } catch (_: Exception) { null }
+            }
             val retriever = MediaMetadataRetriever()
             return try {
                 retriever.setDataSource(context, item.uri)
-                retriever.getFrameAtTime(0)
+                retriever.getScaledFrameAtTime(
+                    0, MediaMetadataRetriever.OPTION_CLOSEST_SYNC,
+                    size.coerceIn(96, 512), size.coerceIn(96, 512))
             } catch (_: Exception) { null } finally { retriever.release() }
         }
         return try {

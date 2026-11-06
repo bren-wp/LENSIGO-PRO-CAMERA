@@ -4,27 +4,27 @@ plugins {
 }
 android {
     namespace = "com.brendigo.lensigo"
-    compileSdk = 36
+    compileSdk = 37
     defaultConfig {
         applicationId = "com.brendigo.lensigo"
         minSdk = 24
         targetSdk = 36
-        versionCode = 6
-        versionName = "0.6.0"
+        versionCode = 7
+        versionName = "0.7.0"
     }
     compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }
     buildFeatures { compose = true; buildConfig = true }
 }
 dependencies {
-    implementation(platform("androidx.compose:compose-bom:2025.12.00"))
-    implementation("androidx.activity:activity-compose:1.12.0")
+    implementation(platform("androidx.compose:compose-bom:2026.09.00"))
+    implementation("androidx.activity:activity-compose:1.13.0")
     implementation("androidx.compose.material3:material3")
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.compose.foundation:foundation")
     implementation("androidx.compose.ui:ui")
-    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.9.4")
-    implementation("androidx.core:core-ktx:1.17.0")
-    implementation("androidx.exifinterface:exifinterface:1.4.1")
+    implementation("androidx.lifecycle:lifecycle-runtime-compose:2.11.0")
+    implementation("androidx.core:core-ktx:1.19.1")
+    implementation("androidx.exifinterface:exifinterface:1.4.2")
     implementation("androidx.annotation:annotation-experimental:1.6.0")
     implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.10.2")
     implementation("androidx.camera:camera-core:1.6.2")

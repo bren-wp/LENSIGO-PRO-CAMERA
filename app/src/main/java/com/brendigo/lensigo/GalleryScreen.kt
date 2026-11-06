@@ -51,6 +51,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.viewinterop.AndroidView
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -180,6 +181,33 @@ fun ViewerScreen(
     val look = PhotoLook(filter = chosen, intensity = strength,
         brightness = brightness, contrast = contrast, saturation = saturation)
 
+    // Preview and saved output share the same crop / rotate / filter pipeline.
+    // Debounce sliders and work on <= 840px to stay responsive on low-RAM phones.
+    val editedPreview by produceState<Bitmap?>(
+        initialValue = null, bitmap, editing, look, crop, rotation
+    ) {
+        val source = bitmap
+        if (!editing || source == null || item.isVideo) {
+            value = null
+        } else {
+            delay(125)
+            value = withContext(Dispatchers.Default) {
+                val maxEdge = kotlin.math.max(source.width, source.height)
+                val small = if (maxEdge > 840) {
+                    val ratio = 840f / maxEdge
+                    Bitmap.createScaledBitmap(source,
+                        (source.width * ratio).toInt().coerceAtLeast(1),
+                        (source.height * ratio).toInt().coerceAtLeast(1), true)
+                } else source
+                try {
+                    MediaActions.renderEdit(small, look, cropAspects[crop], rotation)
+                } finally {
+                    if (small !== source) small.recycle()
+                }
+            }
+        }
+    }
+
     LaunchedEffect(item.uri) {
         bitmap = withContext(Dispatchers.IO) {
             MediaLibrary.thumbnail(context, item, 1600)
@@ -256,17 +284,15 @@ fun ViewerScreen(
         Box(Modifier.weight(1f).fillMaxWidth()
             .padding(horizontal = if (editing) 18.dp else 0.dp),
             contentAlignment = Alignment.Center) {
-            val img = bitmap
+            val img = if (editing) editedPreview ?: bitmap else bitmap
             if (img != null) AndroidView(
                 factory = { ctx -> ImageView(ctx).apply {
                     scaleType = ImageView.ScaleType.FIT_CENTER
                 } },
-                modifier = Modifier.fillMaxSize()
-                    .graphicsLayer(rotationZ = if (editing) rotation.toFloat() else 0f),
+                modifier = Modifier.fillMaxSize(),
                 update = {
                     it.setImageBitmap(img)
-                    it.colorFilter = if (!editing || look.isNeutral) null
-                        else FilterEngine.colorFilter(look)
+                    it.colorFilter = null
                 }
             ) else CircularProgressIndicator(color = GalleryCyan)
             if (item.isVideo) {

@@ -10,7 +10,7 @@ Rekonstrukcija se izrađuje u Jetpack Compose; screenshotovi koncepta nisu stvar
 | 01_splash.png | Splash | Brendirani Compose Splash i simbol LENSIGO | Funkcionalno, nije vizualno 1:1 potvrđeno |
 | 02_onboarding.png | Dobrodošlica | Brendirani prikaz i gumb Započni | Funkcionalno, nije 1:1 potvrđeno |
 | 03_permissions.png | Dozvole | Runtime kamera/pohrana/mikrofon | Funkcionalno, nije vizualno 1:1 |
-| 04_home.png | Početni izbornik | Lokalni izbor načina rada | Funkcionalno, nije 1:1 |
+| 04_home.png | Početni izbornik | Responzivne kartice: 8 CameraX načina rada, galerija, postavke, o aplikaciji | Implementirano; 1:1 nije mjereno |
 | 05_photo.png | Foto | Preview, 4:3/16:9, bljeskalica, fokus, zoom, okidač | Funkcionalno, 1:1 nije potvrđeno |
 | 06_video.png | Video | HD/SD, opcionalni zvuk, recording | Funkcionalno, 1:1 nije potvrđeno |
 | 07_pro.png | Pro | ISO/S/EV/WB/MF panel, Camera2 manual kontrola uz otkrivanje podrške, zum | Funkcionalni hardverski uvjetovani klizači; 1:1 nije potvrđeno |
@@ -21,7 +21,7 @@ Rekonstrukcija se izrađuje u Jetpack Compose; screenshotovi koncepta nisu stvar
 | 12_filters.png | Filteri | 12 lokalnih LUT/matrix efekata i intenzitet | Funkcionalno za JPEG; preview podrška Android 12+ |
 | 13_gallery.png | Galerija | 3 stupca, 4 filtra (Sve/Fotografije/Videozapisi/Favoriti), oznake na snimkama | Implementirano, 1:1 nije potvrđeno |
 | 14_viewer.png | Preglednik | Foto/video, Uredi, Podijeli, Spremi kopiju, Izbriši, favorit | Implementirano, 1:1 nije potvrđeno |
-| 15_editor.png | Uređivač | Svjetlina, kontrast, obrezivanje središta, 12 filtera, rotacija, spremanje | Implementirano, 1:1 nije potvrđeno |
+| 15_editor.png | Uređivač | Zajednička preview/export obrada crop/rotate/filter, 12 efekata, max 840 px u pretpregledu | Funkcionalno unutar implementiranog opsega, 1:1 nije potvrđeno |
 | 16_settings.png | Postavke | JPEG, lokalna obrada, SD video, mreža, timer i opcionalni zvuk | Implementirano, 1:1 nije potvrđeno |
 | 17_camera-settings.png | Kamera postavke | Zaseban ekran JPEG, mreža i video kvaliteta | Implementirano djelomično, 1:1 nije potvrđeno |
 | 18_privacy.png | Privatnost | Brendirana četiri retka, simbol, informativni panel i otvaranje Android dozvola | Implementirano; 1:1 nije potvrđeno |

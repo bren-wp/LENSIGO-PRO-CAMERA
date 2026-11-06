@@ -32,3 +32,11 @@ The feature is **not considered device-tested** just because it compiles.
 - Manual tests for permission revocation, app backgrounding, slow storage, low storage, camera unavailable, camera switching, and vendor extension fallbacks remain necessary.
 
 A screenshot score is valid only for the specific device settings used to capture the screenshot, and camera-content pixels should be masked when comparing overlay geometry. No general claim of pixel-for-pixel visual equivalence is made until per-screen reports are recorded.
+
+## Upgrade 0.7.0
+
+- Provjeriti navigaciju na početnoj mreži (8 kartica) pri 320–600 dp, na velikim fontovima i tabletima.
+- Izvoz uređivača usporediti s istim crop/rotate/filter previewom za fotografije s EXIF zrcaljenjem.
+- Ograničiti i profilirati memoriju video minijatura API 24–28.
+- Provjera APK/AAB native knjižnica prije svakog novog izdanja: `tools/play_package_check.py`.
+- Android 17 / compileSdk 37 uz targetSdk 36, Google Play 2026 i 16 KB provjeru. Ponašanje na stvarnom uređaju još nije potvrđeno.
