@@ -62,7 +62,7 @@ private fun InfoLine(icon: ImageVector, title: String, caption: String,
             if (onClick != null) Modifier.clickable(
                 role = Role.Button, onClickLabel = "Otvori $title", onClick = onClick
             ) else Modifier
-        ).heightIn(min = 54.dp).padding(horizontal = 13.dp, vertical = 10.dp),
+        ).heightIn(min = 50.dp).padding(horizontal = 13.dp, vertical = 8.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(icon, contentDescription = null, tint = Secondary,

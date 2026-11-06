@@ -231,6 +231,8 @@ fun ViewerScreen(
     var bitmap by remember(item.uri) { mutableStateOf<Bitmap?>(null) }
     var imageLoading by remember(item.uri) { mutableStateOf(true) }
     var viewerScale by remember(item.uri) { mutableFloatStateOf(1f) }
+    var viewerPanX by remember(item.uri) { mutableFloatStateOf(0f) }
+    var viewerPanY by remember(item.uri) { mutableFloatStateOf(0f) }
     var busy by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
     var actionsMenu by remember(item.uri) { mutableStateOf(false) }
@@ -276,6 +278,20 @@ fun ViewerScreen(
         }
     }
 
+    // Free native editor previews after a slider recomputation or leaving
+    // Viewer. The original gallery thumbnail is owned separately.
+    DisposableEffect(editedPreview) {
+        val rendered = editedPreview
+        onDispose {
+            if (rendered != null && rendered !== bitmap && !rendered.isRecycled)
+                rendered.recycle()
+        }
+    }
+    DisposableEffect(bitmap) {
+        val original = bitmap
+        onDispose { if (original?.isRecycled == false) original.recycle() }
+    }
+
     LaunchedEffect(item.uri) {
         imageLoading = true
         try {
@@ -292,7 +308,11 @@ fun ViewerScreen(
         if (!busy) editing = false
     }
     LaunchedEffect(editing) {
-        if (editing) viewerScale = 1f
+        if (editing) {
+            viewerScale = 1f
+            viewerPanX = 0f
+            viewerPanY = 0f
+        }
     }
     val deleteLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
@@ -412,8 +432,15 @@ fun ViewerScreen(
         Box(Modifier.weight(1f).fillMaxWidth().clipToBounds()
             .padding(horizontal = if (editing) 18.dp else 0.dp)
             .then(if (!editing && !item.isVideo) Modifier.pointerInput(item.uri) {
-                detectTransformGestures { _, _, zoom, _ ->
-                    viewerScale = (viewerScale * zoom).coerceIn(.6f, 5f)
+                detectTransformGestures { _, pan, zoom, _ ->
+                    val scale = (viewerScale * zoom).coerceIn(.6f, 5f)
+                    viewerScale = scale
+                    // The viewport itself supplies hard pan bounds; panning
+                    // is unavailable at <=1x so a fit-to-screen photo stays centered.
+                    val maxX = (size.width * (scale - 1f) * .5f).coerceAtLeast(0f)
+                    val maxY = (size.height * (scale - 1f) * .5f).coerceAtLeast(0f)
+                    viewerPanX = (viewerPanX + pan.x).coerceIn(-maxX, maxX)
+                    viewerPanY = (viewerPanY + pan.y).coerceIn(-maxY, maxY)
                 }
             } else Modifier),
             contentAlignment = Alignment.Center) {
@@ -426,6 +453,8 @@ fun ViewerScreen(
                     val scale = if (!editing && !item.isVideo) viewerScale else 1f
                     scaleX = scale
                     scaleY = scale
+                    translationX = if (!editing && !item.isVideo) viewerPanX else 0f
+                    translationY = if (!editing && !item.isVideo) viewerPanY else 0f
                 },
                 update = {
                     it.setImageBitmap(img)
@@ -457,7 +486,11 @@ fun ViewerScreen(
                                     .clickable(
                                         role = Role.Button,
                                         onClickLabel = "Prikaži fotografiju na $label"
-                                    ) { viewerScale = zoom },
+                                    ) {
+                                        viewerScale = zoom
+                                        viewerPanX = 0f
+                                        viewerPanY = 0f
+                                    },
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(label, color = if (selected) GalleryInk else GalleryText,

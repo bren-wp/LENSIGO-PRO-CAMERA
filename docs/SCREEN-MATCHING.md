@@ -303,3 +303,14 @@ Provjerene su izvorne reference `izvoz/mobitel/07_pro.png` do `12_filters.png` p
 - Prekidač za video zvuk u Postavkama kamere fizički mijenja `withAudioEnabled()` u CameraX. Kad dozvola nedostaje, pokušaj uključivanja traži izvorno Android dopuštenje. Nijedan audio stream nije uključen ako korisnik onemogući zvuk.
 - Tekst Privatnosti sada točno objašnjava izbor bez zvuka i uvjete za mikrofon; nije dodana mrežna komunikacija, analitika ni usluga treće strane.
 - Testirana je logika uključivanja zvuka (korisnička postavka × sustavna dozvola) JVM testovima; fizičko slušanje videa, oduzimanje dozvole tijekom snimanja i pauza aplikacije ostaju dio device-test matrice.
+
+## 13–19 — ponovna provjera Viewer, Editor, Gallery, Settings, Privacy, About
+
+Izvor: korisnikov `13_gallery.png` … `19_about.png`, mobilna referenca 1080×2400 i tabletna 1600×2560; povezana stvarna Compose implementacija.
+
+- **14 Viewer:** prethodni pinch-zoom povećavao je fotografiju, ali se nije moglo pomicati po uvećanoj slici. Sada dvoprstna gesta istodobno omogućuje zumiranje i pomicanje, uz ograničenje pomaka na vidljivu regiju; klik na originalne tipke 0.6/1×/2×/5× vraća pomak u središte. Ovo je prava lokalna funkcija, ne dekorativna traka.
+- **15 Editor:** privremeno generirane obrađene sličice (promjena svjetline/kontrasta/filtera/cropa/rotacije) sada eksplicitno oslobađaju Android `Bitmap` resurse pri zamjeni ili izlasku iz kompozicije; isto vrijedi za izvornu učitanu sličicu.
+- **16–17 Settings:** kartice sada imaju tanki rub kao originalni izvorni PNG; visina redaka prilagođena je izvornoj gustoći umjesto nepotrebnog minimuma od 71dp, a klikabilnost retka/preklopnika ostaje najmanje 56dp i dostupna uz povećani font.
+- **18–19 Privacy/About:** visina grupiranih informativnih redaka blago je smanjena radi položaja teksta bližeg referenci, uz min. 50dp za interaktivne poveznice. Privacy opis audio-dozvole sada odražava stvarni funkcionalni prekidač.
+- **13 Gallery:** zadržano je samo lokalno čitanje vlastitih medija, tri stupca, četiri filtra i stvarne akcije; kartice i tipografiju potrebno je još provjeriti snimkom izvršene aplikacije.
+- Nijedna ovdje navedena korekcija nije automatski potpuna 1:1 potvrda bez stvarnog Android screenshot rezultata.

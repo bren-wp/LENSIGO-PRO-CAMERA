@@ -44,8 +44,10 @@ private fun SettingsHeader(title: String, onBack: () -> Unit, onMenu: () -> Unit
 private fun SettingsSection(title: String, content: @Composable ColumnScope.() -> Unit) {
     Text(title.uppercase(), color = Cyan, fontSize = 12.sp,
         fontWeight = FontWeight.Bold, modifier = Modifier.padding(top = 13.dp, bottom = 9.dp))
+    val shape = RoundedCornerShape(14.dp)
     Column(Modifier.fillMaxWidth()
-        .background(Panel, RoundedCornerShape(14.dp))
+        .background(Panel, shape)
+        .border(1.dp, Border, shape)
         .padding(horizontal = 9.dp), content = content)
 }
 
@@ -67,7 +69,7 @@ private fun SettingsItem(
 ) {
     val active = onClick != null || onToggle != null
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 71.dp)
+        Modifier.fillMaxWidth().heightIn(min = 56.dp)
             .then(when {
                 checked != null && onToggle != null ->
                     Modifier.toggleable(value = checked, role = Role.Switch,
@@ -77,7 +79,7 @@ private fun SettingsItem(
                         onClickLabel = label, onClick = onClick)
                 else -> Modifier
             })
-            .padding(horizontal = 7.dp, vertical = 12.dp),
+            .padding(horizontal = 7.dp, vertical = 7.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(icon, contentDescription = null,
