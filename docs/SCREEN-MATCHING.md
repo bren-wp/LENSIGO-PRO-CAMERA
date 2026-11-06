@@ -168,3 +168,10 @@ From the original `LENSIGO_Branding_Android_UI_19_ekrana(1).zip`:
 - The reference 12_filters.png shows small photographic previews across the bottom of the camera. The old text-only chips are replaced with locally produced photographic previews, using the real source-provided `assets/photo.jpg` optimized for the Home asset. Each preview passes through the **same FilterEngine** and selected intensity as final JPEG processing, avoiding misleading arbitrary color swatches.
 - All 12 existing filters remain navigable via a horizontally scrolling strip. The chosen filter is outlined in cyan; previews render off the UI thread with a debounce to limit work while the user drags intensity. No external images, network permissions or cloud processing are introduced.
 - Remaining: exact image, font and spacing comparison with original mobile/tablet PNG; actual CameraX preview transformation and low-RAM/long-session profiling are not yet device-verified.
+
+## 13 Gallery / 14 Viewer / 15 Editor navigation
+
+- Gallery keeps three columns of actual LENSIGO MediaStore thumbnails; on narrow widths under 340dp the four category pills become a horizontally scrollable strip instead of truncating names. Other widths retain the reference four-pill row. No developer mockup photographs are inserted in users' galleries.
+- Viewer top-right now uses the original reference's horizontal ellipsis menu; Favorite toggle remains functional inside it, alongside Share, Save copy and Delete. Bottom action bar remains accessible.
+- Editor's top-right gear now opens actual app settings. Image transformations still use the shared crop/rotate/filter pipeline and save a separate copy rather than overwriting originals.
+- Emulator/physical-screen pixel comparisons for all three screens are not yet recorded; real photographs differ from source-designed scene samples.

@@ -25,6 +25,7 @@ import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Share
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material.icons.filled.MoreHoriz
 import androidx.compose.material.icons.filled.Favorite
 import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material.icons.filled.Edit
@@ -98,16 +99,27 @@ fun GalleryScreen(onBack: () -> Unit, onOpen: (LensMedia) -> Unit,
             Text("Fotografije i videozapisi na uređaju.",
                 color = GalleryMuted, fontSize = 14.sp)
             Spacer(Modifier.height(20.dp))
-            Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(3.dp)) {
-                tabs.forEachIndexed { index, name ->
-                    Box(Modifier.weight(1f).height(38.dp)
-                        .background(if (tab == index) Color(0xFF0E4A68)
-                            else Color(0xFF132A3C), RoundedCornerShape(22.dp))
-                        .border(1.dp, Color(0xFF29546C), RoundedCornerShape(22.dp))
-                        .clickable { tab = index },
-                        contentAlignment = Alignment.Center) {
-                        Text(name, color = if (tab == index) GalleryCyan else GalleryText,
-                            fontSize = 10.sp, maxLines = 1, textAlign = TextAlign.Center)
+            BoxWithConstraints(Modifier.fillMaxWidth()) {
+                if (maxWidth < 340.dp) {
+                    LazyRow(horizontalArrangement = Arrangement.spacedBy(5.dp)) {
+                        items(tabs.size) { index ->
+                            GalleryFilterTab(
+                                tabs[index], selected = tab == index,
+                                onClick = { tab = index },
+                                modifier = Modifier.width(88.dp)
+                            )
+                        }
+                    }
+                } else {
+                    Row(Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(3.dp)) {
+                        tabs.forEachIndexed { index, name ->
+                            GalleryFilterTab(
+                                name, selected = tab == index,
+                                onClick = { tab = index },
+                                modifier = Modifier.weight(1f)
+                            )
+                        }
                     }
                 }
             }
@@ -155,9 +167,35 @@ fun GalleryScreen(onBack: () -> Unit, onOpen: (LensMedia) -> Unit,
 }
 
 @Composable
+private fun GalleryFilterTab(
+    name: String, selected: Boolean,
+    onClick: () -> Unit, modifier: Modifier = Modifier
+) {
+    Box(
+        modifier.heightIn(min = 40.dp)
+            .background(
+                if (selected) Color(0xFF0E4A68) else Color(0xFF132A3C),
+                RoundedCornerShape(22.dp)
+            )
+            .border(1.dp, Color(0xFF29546C), RoundedCornerShape(22.dp))
+            .clickable(
+                role = androidx.compose.ui.semantics.Role.Tab,
+                onClickLabel = "Prikaži $name", onClick = onClick
+            ),
+        contentAlignment = Alignment.Center
+    ) {
+        Text(
+            name, color = if (selected) GalleryCyan else GalleryText,
+            fontSize = 10.sp, maxLines = 1, textAlign = TextAlign.Center
+        )
+    }
+}
+
+@Composable
 fun ViewerScreen(
     item: LensMedia, quality: Int, lowMemory: Boolean,
-    onBack: () -> Unit, onSaved: () -> Unit
+    onBack: () -> Unit, onSaved: () -> Unit,
+    onSettings: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
@@ -166,6 +204,7 @@ fun ViewerScreen(
     var bitmap by remember(item.uri) { mutableStateOf<Bitmap?>(null) }
     var busy by remember { mutableStateOf(false) }
     var confirmDelete by remember { mutableStateOf(false) }
+    var actionsMenu by remember(item.uri) { mutableStateOf(false) }
     var favorite by remember(item.uri) {
         mutableStateOf(MediaActions.isFavorite(context, item.uri))
     }
@@ -271,10 +310,55 @@ fun ViewerScreen(
                 color = GalleryText, fontSize = 18.sp,
                 textAlign = TextAlign.Center, fontWeight = FontWeight.Bold,
                 modifier = Modifier.weight(1f))
-            IconButton(onClick = {
-                favorite = MediaActions.toggleFavorite(context, item.uri)
-            }) { Icon(if (favorite) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                "Favorit", tint = if (favorite) GalleryCyan else GalleryText) }
+            if (editing) {
+                IconButton(onClick = onSettings) {
+                    Icon(Icons.Default.Settings, "Postavke", tint = GalleryText)
+                }
+            } else {
+                Box {
+                    IconButton(onClick = { actionsMenu = true }) {
+                        Icon(Icons.Default.MoreHoriz, "Dodatne radnje", tint = GalleryText)
+                    }
+                    DropdownMenu(
+                        expanded = actionsMenu, onDismissRequest = { actionsMenu = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text(if (favorite) "Ukloni iz favorita" else "Dodaj u favorite") },
+                            onClick = {
+                                favorite = MediaActions.toggleFavorite(context, item.uri)
+                                actionsMenu = false
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Podijeli") },
+                            onClick = { actionsMenu = false; share() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Spremi kopiju") },
+                            enabled = !busy,
+                            onClick = {
+                                actionsMenu = false
+                                busy = true
+                                scope.launch {
+                                    try {
+                                        MediaActions.saveCopy(context, item)
+                                        Toast.makeText(context, "Kopija spremljena",
+                                            Toast.LENGTH_SHORT).show()
+                                    } catch (e: Exception) {
+                                        Toast.makeText(context,
+                                            "Pogreška spremanja: " + e.localizedMessage,
+                                            Toast.LENGTH_LONG).show()
+                                    } finally { busy = false }
+                                }
+                            }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Izbriši") },
+                            onClick = { actionsMenu = false; confirmDelete = true }
+                        )
+                    }
+                }
+            }
         }
         if (editing) Column(Modifier.padding(horizontal = 18.dp, vertical = 15.dp)) {
             Text("Uredi fotografiju", fontWeight = FontWeight.Bold,

@@ -1041,6 +1041,7 @@ private fun LensigoApplication() {
                     if (item != null) {
                         ViewerScreen(item = item, quality = jpegQuality, lowMemory = lowMemory,
                             onBack = { moveTo(Screen.GALLERY) },
+                            onSettings = { moveTo(Screen.SETTINGS) },
                             onSaved = {
                                 Toast.makeText(context, "Uređena fotografija spremljena", Toast.LENGTH_SHORT).show()
                                 moveTo(Screen.GALLERY)
