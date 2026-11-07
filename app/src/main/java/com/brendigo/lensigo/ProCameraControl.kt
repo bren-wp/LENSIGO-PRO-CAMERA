@@ -15,6 +15,7 @@ data class ProCapabilities(
     val iso: Range<Int>? = null,
     val shutterNanos: Range<Long>? = null,
     val focusDistance: Float = 0f,
+    val focusModes: List<Int> = emptyList(),
     val whiteBalanceModes: List<Int> = listOf(CaptureRequest.CONTROL_AWB_MODE_AUTO)
 )
 
@@ -40,11 +41,14 @@ object ProCameraControl {
                 ?.toList() ?: listOf(CaptureRequest.CONTROL_AWB_MODE_AUTO)
             val lens = info.getCameraCharacteristic(CameraCharacteristics.LENS_INFO_MINIMUM_FOCUS_DISTANCE)
                 ?: 0f
+            val focus = info.getCameraCharacteristic(
+                CameraCharacteristics.CONTROL_AF_AVAILABLE_MODES
+            )?.toList() ?: emptyList()
             ProCapabilities(
                 manualSensor = available.contains(CameraCharacteristics.REQUEST_AVAILABLE_CAPABILITIES_MANUAL_SENSOR) &&
                     iso != null && exposure != null,
                 iso = iso, shutterNanos = exposure, focusDistance = lens,
-                whiteBalanceModes = modes
+                focusModes = focus, whiteBalanceModes = modes
             )
         } catch (_: Exception) { ProCapabilities() }
     }
@@ -67,6 +71,17 @@ object ProCameraControl {
         66_666_667L to "1/15"
     )
 
+    /** Do not request unsupported AF modes on fixed-focus / legacy lenses. */
+    fun automaticFocusMode(supported: List<Int>): Int? = when {
+        CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE in supported ->
+            CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE
+        CaptureRequest.CONTROL_AF_MODE_AUTO in supported ->
+            CaptureRequest.CONTROL_AF_MODE_AUTO
+        CaptureRequest.CONTROL_AF_MODE_OFF in supported ->
+            CaptureRequest.CONTROL_AF_MODE_OFF
+        else -> null
+    }
+
     @androidx.annotation.OptIn(ExperimentalCamera2Interop::class)
     fun apply(camera: Camera, capabilities: ProCapabilities, values: ProValues) {
         val builder = CaptureRequestOptions.Builder()
@@ -85,9 +100,13 @@ object ProCameraControl {
             builder.setCaptureRequestOption(CaptureRequest.CONTROL_AE_MODE,
                 CaptureRequest.CONTROL_AE_MODE_ON)
         }
-        val wb = if (capabilities.whiteBalanceModes.contains(values.whiteBalanceMode))
-            values.whiteBalanceMode else CaptureRequest.CONTROL_AWB_MODE_AUTO
-        builder.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_MODE, wb)
+        val wb = when {
+            values.whiteBalanceMode in capabilities.whiteBalanceModes -> values.whiteBalanceMode
+            CaptureRequest.CONTROL_AWB_MODE_AUTO in capabilities.whiteBalanceModes ->
+                CaptureRequest.CONTROL_AWB_MODE_AUTO
+            else -> capabilities.whiteBalanceModes.firstOrNull()
+        }
+        if (wb != null) builder.setCaptureRequestOption(CaptureRequest.CONTROL_AWB_MODE, wb)
         if (values.manualFocus && capabilities.focusDistance > 0f) {
             builder.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE,
                 CaptureRequest.CONTROL_AF_MODE_OFF)
@@ -95,8 +114,10 @@ object ProCameraControl {
                 values.focusDiopters.coerceIn(0f, capabilities.focusDistance))
         } else {
             // A former MF value must not persist after switching back to AF.
-            builder.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE,
-                CaptureRequest.CONTROL_AF_MODE_CONTINUOUS_PICTURE)
+            // Some selfie and fixed-focus cameras do not expose continuous AF.
+            automaticFocusMode(capabilities.focusModes)?.let { supportedMode ->
+                builder.setCaptureRequestOption(CaptureRequest.CONTROL_AF_MODE, supportedMode)
+            }
         }
         Camera2CameraControl.from(camera.cameraControl).setCaptureRequestOptions(builder.build())
     }

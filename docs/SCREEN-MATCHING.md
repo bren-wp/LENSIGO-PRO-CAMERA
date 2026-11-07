@@ -314,3 +314,9 @@ Izvor: korisnikov `13_gallery.png` … `19_about.png`, mobilna referenca 1080×2
 - **18–19 Privacy/About:** visina grupiranih informativnih redaka blago je smanjena radi položaja teksta bližeg referenci, uz min. 50dp za interaktivne poveznice. Privacy opis audio-dozvole sada odražava stvarni funkcionalni prekidač.
 - **13 Gallery:** zadržano je samo lokalno čitanje vlastitih medija, tri stupca, četiri filtra i stvarne akcije; kartice i tipografiju potrebno je još provjeriti snimkom izvršene aplikacije.
 - Nijedna ovdje navedena korekcija nije automatski potpuna 1:1 potvrda bez stvarnog Android screenshot rezultata.
+
+## 07 Pro — AF/WB sposobnosti senzora, dodatni audit
+
+- Prilikom vraćanja s MF na AF ne smije se automatski slati `CONTROL_AF_MODE_CONTINUOUS_PICTURE`: dostupnost tog režima ovisi o stvarnom objektivu. PRO sada čita `CONTROL_AF_AVAILABLE_MODES`, preferira kontinuirani AF samo kad postoji, zatim obični AF, pa OFF; kada nijedan nije oglašen, ne nadjačava CameraX.
+- Balans bijele više ne šalje `AWB_AUTO` kamerama koje takav način ne oglašavaju; bira prvu dostupnu podržanu opciju ili ne postavlja zahtjev.
+- Dodani su JUnit testovi za AF fallback na ručno/fiksno fokusiranim objektivima. Na uređajima bez Camera2 manual senzora ISO/S/MF i dalje se ne predstavljaju kao podržane mogućnosti.
