@@ -48,6 +48,7 @@ import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.gestures.detectTapGestures
+import androidx.compose.foundation.gestures.animateScrollBy
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.rememberLazyListState
@@ -128,6 +129,11 @@ internal fun cameraModeScrollIndex(mode: CameraMode): Int {
     return (index - 2).coerceAtLeast(0)
 }
 
+/** Positive means content must move left to center the chosen mode. */
+internal fun cameraModeCenterDeltaPx(
+    itemStart: Int, itemSize: Int, viewportStart: Int, viewportEnd: Int
+): Float = itemStart + itemSize / 2f - (viewportStart + viewportEnd) / 2f
+
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -171,7 +177,21 @@ private fun LensigoApplication() {
     var pipOnLeft by remember { mutableStateOf(false) }
     val modeListState = rememberLazyListState()
     LaunchedEffect(mode) {
-        modeListState.animateScrollToItem(cameraModeScrollIndex(mode))
+        // Source 05–12: active mode text sits exactly in the middle, not
+        // merely after two previous variable-width labels. Scroll to the
+        // correct cyclic neighborhood, then center its actual measured item.
+        val leading = cameraModeScrollIndex(mode)
+        modeListState.animateScrollToItem(leading)
+        val selected = modeListState.layoutInfo.visibleItemsInfo
+            .firstOrNull { it.index == leading + 2 }
+        val layout = modeListState.layoutInfo
+        if (selected != null) {
+            val delta = cameraModeCenterDeltaPx(
+                selected.offset, selected.size,
+                layout.viewportStartOffset, layout.viewportEndOffset
+            )
+            if (kotlin.math.abs(delta) > 1f) modeListState.animateScrollBy(delta)
+        }
     }
     var photoAspectWide by remember {
         mutableStateOf(prefs.getBoolean("photo_aspect_wide", false))

@@ -57,6 +57,14 @@ class CameraModeOrderTest {
     }
 
     @Test
+    fun selectedModeUsesActualItemWidthForCentering() {
+        assertEquals(0f, cameraModeCenterDeltaPx(150, 60, 0, 360), 0.001f)
+        assertEquals(-30f, cameraModeCenterDeltaPx(120, 60, 0, 360), 0.001f)
+        assertEquals(50f, cameraModeCenterDeltaPx(200, 60, 0, 360), 0.001f)
+        assertEquals(0f, cameraModeCenterDeltaPx(140, 60, -10, 350), 0.001f)
+    }
+
+    @Test
     fun allCameraModesArePresentExactlyOnce() {
         assertEquals(CameraMode.entries.size, cameraModeOrder.size)
         assertEquals(CameraMode.entries.toSet(), cameraModeOrder.toSet())

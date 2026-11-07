@@ -344,3 +344,10 @@ Izvor: korisnikov `13_gallery.png` … `19_about.png`, mobilna referenca 1080×2
 - Izvorni logo na `18_privacy.png` u mobilnoj referenci zauzima oko 50dp, dok je u prethodnom Compose kodu zauzimao 64dp; na mobitelu sada koristi 52dp, a na tabletu zadržava veći vizual.
 - Na `19_about.png` originalni podnaslov je **„Koncept Android dizajna”**, a podnožje **„© 2026 Brendigo · Vizualni koncept”**. Vraćeni su točni tekstovi, smanjen mobilni logotip i glavni naslov, a tabletna prilagodba ostaje povećana.
 - U skupu promjena nisu generirane nove slike; koriste se izvorni Brendigo simboli. Potvrda 1:1 zahtijeva stvarni screenshot aplikacije.
+
+## 05–12 — ispravljena stvarna centriranost aktivnog načina
+
+- Prethodni `animateScrollToItem(index - 2)` pokazivao je dvije prethodne kartice, ali tekst aktivnog načina rada nije bio nužno **točno na sredini** zaslona: nazivi imaju različite širine (NOĆ, PANORAMA, FILTERI), a i zasloni se razlikuju.
+- Novi algoritam prvo prikazuje izvorni kružni susjedni redoslijed, zatim očitava stvarni položaj/širinu vidljivog aktivnog `LazyRow` elementa i pomiče traku točno za izračunati centrirajući broj piksela. Ne koristi simulirane jednake širine teksta.
+- JUnit testovi pokrivaju nultu, negativnu i pozitivnu korekciju položaja, uključujući referentne insets; postojeći testovi i dalje osiguravaju svih osam načina.
+- Potvrda pixel-perfect 1:1 cijelih zaslona 05–12 zahtijeva snimke živog emulatora s usklađenim kadrom i maskiranim samo promjenjivim područjima senzora.
