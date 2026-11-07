@@ -179,6 +179,9 @@ private fun LensigoApplication() {
     var aspectWide by remember { mutableStateOf(photoAspectWide) }
     var preferSD by remember { mutableStateOf(prefs.getBoolean("video_sd", true)) }
     var recordAudio by remember { mutableStateOf(prefs.getBoolean("record_audio", true)) }
+    var nightProcessing by remember {
+        mutableStateOf(prefs.getBoolean("night_processing", true))
+    }
     var lowMemory by remember { mutableStateOf(prefs.getBoolean("low_memory", true)) }
     var softenNoise by remember { mutableStateOf(prefs.getBoolean("noise", false)) }
     var sharpen by remember { mutableStateOf(prefs.getBoolean("sharpen", false)) }
@@ -318,14 +321,15 @@ private fun LensigoApplication() {
     val look = PhotoLook(
         filter = if (mode == CameraMode.FILTERS) filter else LensFilter.ORIGINAL,
         intensity = intensity,
-        brightness = if (mode == CameraMode.NIGHT && !vendorEffect)
+        brightness = if (mode == CameraMode.NIGHT && nightProcessing && !vendorEffect)
             brightness.coerceAtLeast(.15f) else brightness,
         contrast = contrast, saturation = saturation,
-        lowLight = mode == CameraMode.NIGHT && !vendorEffect,
+        lowLight = mode == CameraMode.NIGHT && nightProcessing && !vendorEffect,
         softenNoise = softenNoise, sharpen = sharpen,
         portraitBlur = if (mode == CameraMode.PORTRAIT && !vendorEffect) portraitBlur else 0f
     )
-    DisposableEffect(previewView, selfieView, screen, front, mode, aspectWide, preferSD, dualStep, hasCameraPermission) {
+    DisposableEffect(previewView, selfieView, screen, front, mode, aspectWide, preferSD,
+        dualStep, nightProcessing, hasCameraPermission) {
         val view = previewView
         if (view == null || screen != Screen.CAMERA || !hasCameraPermission) {
             onDispose { }
@@ -383,7 +387,7 @@ private fun LensigoApplication() {
                             .build()
                         photoCapture = capture; videoCapture = null
                         val ext = when (mode) {
-                            CameraMode.NIGHT -> ExtensionMode.NIGHT
+                            CameraMode.NIGHT -> if (nightProcessing) ExtensionMode.NIGHT else null
                             CameraMode.PORTRAIT -> ExtensionMode.BOKEH
                             else -> null
                         }
@@ -1245,7 +1249,7 @@ private fun LensigoApplication() {
                     preferSD = preferSD,
                     noise = softenNoise, sharpen = sharpen,
                     lowMemory = lowMemory, hasMicrophone = hasMicPermission,
-                    recordAudio = recordAudio,
+                    recordAudio = recordAudio, nightProcessing = nightProcessing,
                     onQuality = { jpegQuality = it },
                     onQualityFinished = {
                         prefs.edit().putInt("quality", jpegQuality).apply()
@@ -1273,6 +1277,10 @@ private fun LensigoApplication() {
                     onRecordAudio = {
                         recordAudio = it
                         prefs.edit().putBoolean("record_audio", it).apply()
+                    },
+                    onNightProcessing = {
+                        nightProcessing = it
+                        prefs.edit().putBoolean("night_processing", it).apply()
                     },
                     onBack = { moveTo(Screen.SETTINGS) }
                 )

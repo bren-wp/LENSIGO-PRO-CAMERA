@@ -208,6 +208,7 @@ internal fun LensigoCameraSettingsScreen(
     lowMemory: Boolean,
     hasMicrophone: Boolean,
     recordAudio: Boolean,
+    nightProcessing: Boolean,
     onQuality: (Int) -> Unit,
     onQualityFinished: () -> Unit,
     onPhotoAspect: (Boolean) -> Unit,
@@ -218,63 +219,104 @@ internal fun LensigoCameraSettingsScreen(
     onLowMemory: (Boolean) -> Unit,
     onMicrophone: () -> Unit,
     onRecordAudio: (Boolean) -> Unit,
+    onNightProcessing: (Boolean) -> Unit,
     onBack: () -> Unit
 ) {
+    var advanced by remember { mutableStateOf(false) }
     Column(Modifier.fillMaxSize().background(LensigoReferenceBackground)) {
-        SettingsHeader("Postavke kamere", onBack, onBack)
+        // The right-hand gear opens genuinely functional extra controls.
+        // The default content follows the original 17_camera-settings.png.
+        SettingsHeader("Postavke kamere", onBack, { advanced = !advanced })
         Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())
             .padding(horizontal = 17.dp), horizontalAlignment = Alignment.CenterHorizontally) {
             Column(Modifier.widthIn(max = 600.dp)) {
                 Spacer(Modifier.height(20.dp))
-                Text("Snimanje", color = White, fontSize = 27.sp,
-                    fontWeight = FontWeight.Bold)
-                Text("Prilagodi fotografije i videozapise.", color = Muted, fontSize = 13.sp)
-                SettingsSection("Fotografija") {
-                    Column(Modifier.padding(horizontal = 12.dp, vertical = 14.dp)) {
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Icon(Icons.Default.CameraAlt, null, tint = Muted)
-                            Spacer(Modifier.width(14.dp))
-                            Text("Kvaliteta JPEG fotografije", color = White,
-                                fontSize = 14.sp, modifier = Modifier.weight(1f))
-                            Text("$jpegQuality %", color = Cyan, fontSize = 12.sp)
-                        }
-                        Slider(value = jpegQuality.toFloat(), valueRange = 70f..100f,
-                            onValueChange = { onQuality(it.toInt()) },
-                            onValueChangeFinished = onQualityFinished)
+                Text(if (advanced) "Napredne postavke" else "Snimanje",
+                    color = White, fontSize = 27.sp, fontWeight = FontWeight.Bold)
+                Text(
+                    if (advanced) "Detaljne postavke lokalne obrade fotografija."
+                    else "Napredne postavke fotografija i videa.",
+                    color = Muted, fontSize = 13.sp
+                )
+                if (!advanced) {
+                    // 17_camera-settings reference: exactly five photo rows.
+                    SettingsSection("Fotografija") {
+                        SettingsItem(Icons.Default.CameraAlt, "Razlučivost",
+                            "Najviša podržana za odabranu kameru", "Visoka")
+                        SettingsDivider()
+                        SettingsItem(Icons.Default.CropOriginal, "Format fotografije",
+                            "Spremanje u standardnom formatu", "JPEG")
+                        SettingsDivider()
+                        SettingsItem(Icons.Default.Tune, "HDR obrada",
+                            "Ovisi o obradi uređaja", "Uređaj")
+                        SettingsDivider()
+                        SettingsItem(Icons.Default.AspectRatio, "Omjer slike",
+                            "Standardni ili široki kadar",
+                            if (photoAspectWide) "16:9" else "4:3",
+                            onClick = { onPhotoAspect(!photoAspectWide) })
+                        SettingsDivider()
+                        SettingsItem(Icons.Default.NightsStay, "Noćna obrada",
+                            "U načinu NOĆ, ako je dostupna",
+                            checked = nightProcessing, onToggle = onNightProcessing)
                     }
-                    SettingsDivider()
-                    SettingsItem(Icons.Default.AspectRatio, "Omjer slike",
-                        "Fotografiranje u 4:3 ili 16:9",
-                        if (photoAspectWide) "16:9" else "4:3",
-                        onClick = { onPhotoAspect(!photoAspectWide) })
-                    SettingsDivider()
-                    SettingsItem(Icons.Default.GridOn, "Mreža kadra",
-                        "Pravilo trećina", checked = grid, onToggle = onGrid)
-                    SettingsDivider()
-                    SettingsItem(Icons.Default.Memory, "Štedljiva obrada",
-                        "Manja potrošnja memorije", checked = lowMemory,
-                        onToggle = onLowMemory)
-                    SettingsDivider()
-                    SettingsItem(Icons.Default.BlurOn, "Smanjenje šuma",
-                        "Blago zaglađivanje slike", checked = noise, onToggle = onNoise)
-                    SettingsDivider()
-                    SettingsItem(Icons.Default.AutoFixHigh, "Izoštravanje",
-                        "Naglašavanje rubova", checked = sharpen, onToggle = onSharpen)
-                }
-                SettingsSection("Video") {
-                    SettingsItem(Icons.Default.Videocam, "Kvaliteta videosnimanja",
-                        "SD ili HD prema uređaju", checked = !preferSD,
-                        onToggle = { hd -> onSD(!hd) })
-                    SettingsDivider()
-                    SettingsItem(Icons.Default.Mic, "Snimanje zvuka",
-                        if (hasMicrophone) "Mikrofon" else "Potrebna je dozvola za mikrofon",
-                        checked = hasMicrophone && recordAudio,
-                        onToggle = { enabled ->
-                            if (enabled && !hasMicrophone) {
-                                onRecordAudio(true)
-                                onMicrophone()
-                            } else onRecordAudio(enabled)
-                        })
+                    // Reference has four video rows. FPS and stabilization are
+                    // informational: CameraX cannot promise 4K/60 or EIS here.
+                    SettingsSection("Video") {
+                        SettingsItem(Icons.Default.Videocam, "Razlučivost",
+                            "SD ili HD, ovisno o kameri",
+                            if (preferSD) "SD" else "HD",
+                            onClick = { onSD(!preferSD) })
+                        SettingsDivider()
+                        SettingsItem(Icons.Default.Timer, "Broj sličica",
+                            "Brzina koju odabire uređaj", "Auto")
+                        SettingsDivider()
+                        SettingsItem(Icons.Default.Tune, "Stabilizacija",
+                            "Ovisi o podršci uređaja", "Uređaj")
+                        SettingsDivider()
+                        SettingsItem(Icons.Default.Mic, "Snimanje zvuka",
+                            if (hasMicrophone) "Mikrofon" else "Potrebna je dozvola za mikrofon",
+                            checked = hasMicrophone && recordAudio,
+                            onToggle = { enabled ->
+                                if (enabled && !hasMicrophone) {
+                                    onRecordAudio(true)
+                                    onMicrophone()
+                                } else onRecordAudio(enabled)
+                            })
+                    }
+                } else {
+                    // Gear-only advanced controls preserve the source's
+                    // nine-row default layout without removing functionality.
+                    SettingsSection("JPEG i lokalna obrada") {
+                        Column(Modifier.padding(horizontal = 12.dp, vertical = 12.dp)) {
+                            Row(verticalAlignment = Alignment.CenterVertically) {
+                                Icon(Icons.Default.CameraAlt, null, tint = Muted)
+                                Spacer(Modifier.width(14.dp))
+                                Text("JPEG kvaliteta", color = White,
+                                    fontSize = 14.sp, modifier = Modifier.weight(1f))
+                                Text("$jpegQuality %", color = Cyan, fontSize = 12.sp)
+                            }
+                            Slider(value = jpegQuality.toFloat(), valueRange = 70f..100f,
+                                onValueChange = { onQuality(it.toInt()) },
+                                onValueChangeFinished = onQualityFinished)
+                        }
+                        SettingsDivider()
+                        SettingsItem(Icons.Default.GridOn, "Mreža kadra",
+                            "Pravilo trećina", checked = grid, onToggle = onGrid)
+                        SettingsDivider()
+                        SettingsItem(Icons.Default.Memory, "Štedljiva obrada",
+                            "Manja potrošnja memorije", checked = lowMemory,
+                            onToggle = onLowMemory)
+                        SettingsDivider()
+                        SettingsItem(Icons.Default.BlurOn, "Smanjenje šuma",
+                            "Blago zaglađivanje slike", checked = noise, onToggle = onNoise)
+                        SettingsDivider()
+                        SettingsItem(Icons.Default.AutoFixHigh, "Izoštravanje",
+                            "Naglašavanje rubova", checked = sharpen, onToggle = onSharpen)
+                    }
+                    TextButton(onClick = { advanced = false },
+                        modifier = Modifier.fillMaxWidth()) {
+                        Text("Natrag na postavke snimanja", color = Cyan)
+                    }
                 }
                 Spacer(Modifier.height(28.dp))
             }

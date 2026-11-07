@@ -327,3 +327,12 @@ Izvor: korisnikov `13_gallery.png` … `19_about.png`, mobilna referenca 1080×2
 - Na API 24–28 `delete()` rezultat provjerava: 0 izbrisanih redaka nije lažno uspješno brisanje. Android 11+ i dalje upotrebljava `MediaStore.createDeleteRequest` koji briše potvrđene snimke kroz sustav.
 - Galerijske kartice filtara sada izgovaraju je li pojedina kartica **odabrana** radi TalkBack pristupačnosti, umjesto da odabir bude vidljiv isključivo kroz cijan boju.
 - Na stvarnim API 24/29/30/36 uređajima ostaje obvezno provjeriti brisanje, povratak u galeriju i osvježavanje popisa; kompilacija i unit testovi ne zamjenjuju taj test.
+
+## Vizualni i funkcionalni popravak zaslona 17 — izvorna referenca
+
+- Ponovno otvoren original `izvoz/mobitel/17_camera-settings.png` (1080×2400), referenca za **05–12** nije zamijenjena opisnom pretpostavkom. Izvorni gornji ekran ima pet stavki pod FOTOGRAFIJA: Razlučivost, Format fotografije, HDR obrada, Omjer slike, Noćna obrada; te četiri pod VIDEO: Razlučivost, Broj sličica, Stabilizacija, Snimanje zvuka.
+- Prijašnji Compose UI je imao JPEG klizač i lokalne filtre izravno među glavnim fotografskim stavkama, što je veliki rasporedni i hijerarhijski odmak od slike. **Početni prikaz sada ima jednak broj i slijed stavki.**
+- Stvarno djelotvorne opcije: omjer 4:3/16:9, stvarni postojeći odabir SD/HD za CameraX, `night_processing` koji uključuje/isključuje Night vendor ekstenziju i lokalno poboljšanje, te korisnička kontrola zvuka videa.
+- Vrijednosti bez izravne kontrole CameraX-a prikazuju se **isključivo informativno**: JPEG (RAW/HEIF nije implementiran), HDR i broj sličica koje odabire uređaj, stabilizacija prema uređaju. Nije lažno napisano 4K, 60 FPS ni omogućen prekidač za stabilizaciju koja ne upravlja stvarnim hardverom.
+- Postojeće i stvarno funkcionalne dodatne kontrole (JPEG kvaliteta, mreža kadra, štedljiva obrada, smanjenje šuma, izoštravanje) ostaju dostupne pritiskom zupčanika u zaglavlju, unutar zasebnog naprednog prikaza. Zadana referentna kompozicija ostaje netaknuta.
+- Potpuni pixel-diff nije moguć samo iz izvornog PNG-a: za provjeru 1:1 treba stvarni `screencap` pokrenute Android aplikacije pri odgovarajućoj gustoći i urezima zaslona.
