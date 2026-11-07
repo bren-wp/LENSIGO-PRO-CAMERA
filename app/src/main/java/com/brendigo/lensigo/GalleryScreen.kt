@@ -49,6 +49,8 @@ import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.semantics.stateDescription
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
@@ -208,7 +210,10 @@ private fun GalleryFilterTab(
             .clickable(
                 role = androidx.compose.ui.semantics.Role.Tab,
                 onClickLabel = "Prikaži $name", onClick = onClick
-            ),
+            )
+            .semantics {
+                stateDescription = if (selected) "Odabrano" else "Nije odabrano"
+            },
         contentAlignment = Alignment.Center
     ) {
         Text(
@@ -317,8 +322,24 @@ fun ViewerScreen(
     val deleteLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.StartIntentSenderForResult()
     ) { result ->
-        if (result.resultCode == Activity.RESULT_OK) onBack()
-        else Toast.makeText(context, "Brisanje otkazano", Toast.LENGTH_SHORT).show()
+        if (result.resultCode == Activity.RESULT_OK) {
+            if (Build.VERSION.SDK_INT == 29) {
+                // On Android 10 RecoverableSecurityException only grants
+                // access; the app MUST retry the original delete operation.
+                try {
+                    val rows = context.contentResolver.delete(item.uri, null, null)
+                    if (rows > 0) onBack()
+                    else Toast.makeText(context, "Snimka nije izbrisana",
+                        Toast.LENGTH_LONG).show()
+                } catch (_: Exception) {
+                    Toast.makeText(context, "Brisanje nakon dopuštenja nije uspjelo",
+                        Toast.LENGTH_LONG).show()
+                }
+            } else {
+                // On Android 11+ createDeleteRequest performs deletion itself.
+                onBack()
+            }
+        } else Toast.makeText(context, "Brisanje otkazano", Toast.LENGTH_SHORT).show()
     }
     fun share() {
         try {
@@ -337,8 +358,10 @@ fun ViewerScreen(
                 val request = MediaStore.createDeleteRequest(context.contentResolver, listOf(item.uri))
                 deleteLauncher.launch(IntentSenderRequest.Builder(request.intentSender).build())
             } else {
-                context.contentResolver.delete(item.uri, null, null)
-                onBack()
+                val rows = context.contentResolver.delete(item.uri, null, null)
+                if (rows > 0) onBack()
+                else Toast.makeText(context, "Snimka nije izbrisana",
+                    Toast.LENGTH_LONG).show()
             }
         } catch (e: Exception) {
             if (Build.VERSION.SDK_INT >= 29 &&

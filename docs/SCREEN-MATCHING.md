@@ -320,3 +320,10 @@ Izvor: korisnikov `13_gallery.png` … `19_about.png`, mobilna referenca 1080×2
 - Prilikom vraćanja s MF na AF ne smije se automatski slati `CONTROL_AF_MODE_CONTINUOUS_PICTURE`: dostupnost tog režima ovisi o stvarnom objektivu. PRO sada čita `CONTROL_AF_AVAILABLE_MODES`, preferira kontinuirani AF samo kad postoji, zatim obični AF, pa OFF; kada nijedan nije oglašen, ne nadjačava CameraX.
 - Balans bijele više ne šalje `AWB_AUTO` kamerama koje takav način ne oglašavaju; bira prvu dostupnu podržanu opciju ili ne postavlja zahtjev.
 - Dodani su JUnit testovi za AF fallback na ručno/fiksno fokusiranim objektivima. Na uređajima bez Camera2 manual senzora ISO/S/MF i dalje se ne predstavljaju kao podržane mogućnosti.
+
+## 13 Gallery / 14 Viewer — pregled stvarnog brisanja i pristupačnosti
+
+- `ViewerScreen.delete()`: na Androidu 10 (API 29) prvi poziv može baciti `RecoverableSecurityException` i otvoriti Android sistemsku potvrdu. Prijašnja implementacija nakon odobrenja samo se vraćala u galeriju, bez ponavljanja `contentResolver.delete`. Sada se na API 29 brisanje stvarno ponavlja te se tek nakon uspješnog uklanjanja snimke vraća u galeriju.
+- Na API 24–28 `delete()` rezultat provjerava: 0 izbrisanih redaka nije lažno uspješno brisanje. Android 11+ i dalje upotrebljava `MediaStore.createDeleteRequest` koji briše potvrđene snimke kroz sustav.
+- Galerijske kartice filtara sada izgovaraju je li pojedina kartica **odabrana** radi TalkBack pristupačnosti, umjesto da odabir bude vidljiv isključivo kroz cijan boju.
+- Na stvarnim API 24/29/30/36 uređajima ostaje obvezno provjeriti brisanje, povratak u galeriju i osvježavanje popisa; kompilacija i unit testovi ne zamjenjuju taj test.
