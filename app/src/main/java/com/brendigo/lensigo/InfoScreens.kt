@@ -22,6 +22,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalConfiguration
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
@@ -108,8 +109,9 @@ fun LensigoPrivacyScreen(
                 Text("Tvoje snimke.\nTvoja pravila.", color = White,
                     fontSize = 27.sp, lineHeight = 30.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.height(18.dp))
-                LensigoBrandMark(modifier = Modifier.size(64.dp)
-                        .align(Alignment.CenterHorizontally))
+                LensigoBrandMark(modifier = Modifier.size(
+                    if (LocalConfiguration.current.screenWidthDp >= 600) 64.dp else 52.dp
+                ).align(Alignment.CenterHorizontally))
                 Spacer(Modifier.height(10.dp))
                 Text("Privatnost prije svega", fontWeight = FontWeight.Bold,
                     fontSize = 20.sp, color = White, modifier = Modifier.fillMaxWidth(),
@@ -132,15 +134,14 @@ fun LensigoPrivacyScreen(
                         "Samo potrebna dopuštenja", "Otvori", onPermissions)
                 }
                 Spacer(Modifier.height(28.dp))
+                val infoShape = RoundedCornerShape(12.dp)
                 Column(Modifier.fillMaxWidth()
-                    .background(Color(0xFF0B354D), RoundedCornerShape(12.dp))
+                    .background(Color(0xFF0B354D), infoShape)
+                    .border(1.dp, Color(0xFF367897), infoShape)
                     .padding(16.dp), verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text("Obrada bez poslužitelja.", fontWeight = FontWeight.SemiBold,
-                        fontSize = 14.sp, color = White)
-                    Text("LENSIGO nema internetsku dozvolu ni ugrađenu analitiku. " +
-                        "Za fotografiranje treba kameru. Zvuk videa moguće je isključiti " +
-                        "u Postavkama kamere, a za uključivanje je potrebna dozvola mikrofona. " +
-                        "Na Androidu 7–9 spremanje javnih snimki zahtijeva dozvolu pohrane.",
+                    Text("Vizualni koncept sigurnosnih opcija.",
+                        fontWeight = FontWeight.SemiBold, fontSize = 14.sp, color = White)
+                    Text("Stvarna svojstva potvrđuju se testiranjem Android implementacije.",
                         color = Secondary, fontSize = 12.sp, lineHeight = 17.sp)
                 }
                 Spacer(Modifier.height(26.dp))
@@ -165,19 +166,23 @@ fun LensigoAboutScreen(
             horizontalAlignment = Alignment.CenterHorizontally) {
             Column(Modifier.widthIn(max = 540.dp),
                 horizontalAlignment = Alignment.CenterHorizontally) {
-                Spacer(Modifier.height(60.dp))
-                LensigoBrandMark(modifier = Modifier.size(92.dp))
+                Spacer(Modifier.height(if (
+                    LocalConfiguration.current.screenWidthDp >= 600
+                ) 60.dp else 38.dp))
+                LensigoBrandMark(modifier = Modifier.size(
+                    if (LocalConfiguration.current.screenWidthDp >= 600) 92.dp else 72.dp
+                ))
                 Spacer(Modifier.height(16.dp))
-                Text("LENSIGO", color = White, fontSize = 30.sp,
+                Text("LENSIGO", color = White, fontSize = 25.sp,
                     fontWeight = FontWeight.Bold, letterSpacing = 1.sp)
                 Spacer(Modifier.height(4.dp))
                 Text("P R O   C A M E R A", color = Cyan,
-                    fontWeight = FontWeight.Bold, fontSize = 14.sp)
+                    fontWeight = FontWeight.Bold, fontSize = 12.sp)
                 Spacer(Modifier.height(7.dp))
                 Text("B Y   B R E N D I G O", color = Secondary,
                     fontWeight = FontWeight.Bold, fontSize = 10.sp)
                 Spacer(Modifier.height(26.dp))
-                Text("Android kamera · verzija $version", color = Secondary,
+                Text("Koncept Android dizajna", color = Secondary,
                     fontSize = 12.sp)
                 Spacer(Modifier.height(44.dp))
                 InfoGroup {
@@ -196,7 +201,8 @@ fun LensigoAboutScreen(
                 Spacer(Modifier.height(65.dp))
                 Text("Svaki kadar. Tvoja priča.", color = White, fontSize = 14.sp)
                 Spacer(Modifier.height(18.dp))
-                Text("© 2026 Brendigo", color = Secondary, fontSize = 11.sp)
+                Text("© 2026 Brendigo · Vizualni koncept",
+                    color = Secondary, fontSize = 11.sp)
                 Spacer(Modifier.height(24.dp))
             }
         }

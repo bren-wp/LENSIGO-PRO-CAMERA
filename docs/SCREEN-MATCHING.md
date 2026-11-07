@@ -336,3 +336,11 @@ Izvor: korisnikov `13_gallery.png` … `19_about.png`, mobilna referenca 1080×2
 - Vrijednosti bez izravne kontrole CameraX-a prikazuju se **isključivo informativno**: JPEG (RAW/HEIF nije implementiran), HDR i broj sličica koje odabire uređaj, stabilizacija prema uređaju. Nije lažno napisano 4K, 60 FPS ni omogućen prekidač za stabilizaciju koja ne upravlja stvarnim hardverom.
 - Postojeće i stvarno funkcionalne dodatne kontrole (JPEG kvaliteta, mreža kadra, štedljiva obrada, smanjenje šuma, izoštravanje) ostaju dostupne pritiskom zupčanika u zaglavlju, unutar zasebnog naprednog prikaza. Zadana referentna kompozicija ostaje netaknuta.
 - Potpuni pixel-diff nije moguć samo iz izvornog PNG-a: za provjeru 1:1 treba stvarni `screencap` pokrenute Android aplikacije pri odgovarajućoj gustoći i urezima zaslona.
+
+## 18 Privacy i 19 About — točan sadržaj izvornog PNG-a i proporcije
+
+- Na korisnikovom `18_privacy.png` istaknuta kartica glasi **„Vizualni koncept sigurnosnih opcija.”**, a ne **„Obrada bez poslužitelja.”** kako je bilo u aplikaciji. Sada su prikazani izvorni naslov, izvorna objašnjavajuća rečenica i izmjereni rub kartice.
+- To ne znači da je sigurnost dokazano testirana: izvorni tekst izričito kaže da stvarna svojstva potvrđuju Android testovi. Korisnik i dalje ima funkcionalan red za sustavne dozvole, a detalji o mikrofonu ostaju u Postavkama kamere.
+- Izvorni logo na `18_privacy.png` u mobilnoj referenci zauzima oko 50dp, dok je u prethodnom Compose kodu zauzimao 64dp; na mobitelu sada koristi 52dp, a na tabletu zadržava veći vizual.
+- Na `19_about.png` originalni podnaslov je **„Koncept Android dizajna”**, a podnožje **„© 2026 Brendigo · Vizualni koncept”**. Vraćeni su točni tekstovi, smanjen mobilni logotip i glavni naslov, a tabletna prilagodba ostaje povećana.
+- U skupu promjena nisu generirane nove slike; koriste se izvorni Brendigo simboli. Potvrda 1:1 zahtijeva stvarni screenshot aplikacije.

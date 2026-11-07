@@ -70,7 +70,7 @@ jobs:
               if gh release upload "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --clobber; then
                 exit 0
               fi
-            elif gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO $TAG: Camera Settings screen 17 now mirrors five photo and four video reference rows; Night Processing toggle actually enables/disables vendor and local Night algorithms, video quality and audio toggles remain functional. Hardware-uncontrolled RAW/4K/60FPS/HDR/EIS are not falsely advertised; previous JPEG quality, grid, denoise, sharpen, low-memory controls remain in accessible advanced gear screen. Other screens and camera modes unchanged. Pixel-perfect 1:1 requires device screenshots. APK test-signed, AAB unsigned."; then
+            elif gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO $TAG: Source-reference pixel audit continues across all 19 screens. Corrected 18 Privacy exact reference callout copy and bordered card, smaller phone lens logo. Corrected 19 About exact subtitle/footer copy and brand geometry for phone/tablet. Prior 17 Camera Settings matches five photo and four video reference rows with functional Night and video-audio toggles, other advanced controls preserved. This is source-driven layout work, not measured Android 1:1 screenshot proof. Preview APK test-signed, AAB unsigned."; then
               exit 0
             fi
             if [ "$attempt" -eq 4 ]; then
