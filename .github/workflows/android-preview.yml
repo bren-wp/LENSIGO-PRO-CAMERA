@@ -70,7 +70,7 @@ jobs:
               if gh release upload "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --clobber; then
                 exit 0
               fi
-            elif gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO $TAG: Camera 05–12 mode labels are now mathematically centered using actual measured Compose LazyRow item widths, not assumed equal text widths. Added position/viewport regression tests. Previous v57 Camera Settings 17 now follows reference five photo/four video rows with real Night and audio toggles; v58 restores exact Privacy/About reference copy and logo proportions. No unsupported RAW/4K/FPS/EIS switches are faked. Device screenshot 1:1 proof still outstanding. APK debug-signed; AAB unsigned."; then
+            elif gh release create "$TAG" app/build/outputs/apk/debug/*.apk app/build/outputs/bundle/release/*.aab --target "$GITHUB_SHA" --prerelease --title "LENSIGO $TAG · Android preview" --notes "LENSIGO $TAG: Settings 16/17 reference row geometry compacted to 48dp minimum touch targets, preserving accessibility while reducing screen overflow on phone. Camera Settings 17 source 5+4 hierarchy and real night/audio controls retained in default layout; advanced controls remain accessible. Previous visual source matches for Privacy 18/About 19 and centered camera modes for all 8 styles retained. No verified Android screenshot pixel-diff. APK debug-signed; AAB unsigned."; then
               exit 0
             fi
             if [ "$attempt" -eq 4 ]; then

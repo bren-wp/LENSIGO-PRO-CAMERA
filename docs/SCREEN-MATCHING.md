@@ -351,3 +351,11 @@ Izvor: korisnikov `13_gallery.png` … `19_about.png`, mobilna referenca 1080×2
 - Novi algoritam prvo prikazuje izvorni kružni susjedni redoslijed, zatim očitava stvarni položaj/širinu vidljivog aktivnog `LazyRow` elementa i pomiče traku točno za izračunati centrirajući broj piksela. Ne koristi simulirane jednake širine teksta.
 - JUnit testovi pokrivaju nultu, negativnu i pozitivnu korekciju položaja, uključujući referentne insets; postojeći testovi i dalje osiguravaju svih osam načina.
 - Potvrda pixel-perfect 1:1 cijelih zaslona 05–12 zahtijeva snimke živog emulatora s usklađenim kadrom i maskiranim samo promjenjivim područjima senzora.
+
+## 16 Settings / 17 Camera Settings — mjerenje kartičnih redaka (mobilni raster)
+
+- U izvornoj mobilnoj referenci 1080×2400 opći zaslon Postavke ima 5+3+3 informacijska retka unutar tri grupirane kartice. Prethodni Compose minimum od 56dp uz dodatno vertikalno odstupanje zauzimao je previše visine i potiskivao najdonju karticu ispod vidljive zone.
+- Postavljena je minimalna visina reda od 48dp (Android preporučena dodirna površina), uz smanjene unutarnje vertikalne razmake; prilagodljivi tekst i dalje smije povećati karticu kad je uvećan sistemski font.
+- S uključenom 17 Camera Settings izvorno usklađenom hijerarhijom 5+4 retka ova korekcija omogućuje bolju vidljivost svih devet stavki bez preklapanja. Dodatni JPEG/postprocessing alati ostaju u prikazu naprednih postavki zupčanika.
+- Uklonjen je neiskorišteni `active` lokalni izraz u `SettingsItem` (mali dead-code cleanup); klik/prekidač i TalkBack ostaju ista jedna semantička akcija.
+- Bez Android screencap provjere nije moguće potvrditi točnu pikselnu podudarnost izvornih PNG-ova.

@@ -68,9 +68,8 @@ private fun SettingsItem(
     onClick: (() -> Unit)? = null,
     onToggle: ((Boolean) -> Unit)? = null
 ) {
-    val active = onClick != null || onToggle != null
     Row(
-        Modifier.fillMaxWidth().heightIn(min = 56.dp)
+        Modifier.fillMaxWidth().heightIn(min = 48.dp)
             .then(when {
                 checked != null && onToggle != null ->
                     Modifier.toggleable(value = checked, role = Role.Switch,
@@ -80,7 +79,7 @@ private fun SettingsItem(
                         onClickLabel = label, onClick = onClick)
                 else -> Modifier
             })
-            .padding(horizontal = 7.dp, vertical = 7.dp),
+            .padding(horizontal = 7.dp, vertical = 6.dp),
         verticalAlignment = Alignment.CenterVertically
     ) {
         Icon(icon, contentDescription = null,
